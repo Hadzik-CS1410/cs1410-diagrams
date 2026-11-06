@@ -17,7 +17,10 @@
   body { margin: 0; padding: 24px 16px 64px;
          font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
          color: var(--ink); background: #fff; }
-  .wrap { max-width: 1060px; margin: 0 auto; }
+  /* No max-width. The CS 1400 steppers run the full browser width and read
+     far better for it -- code, terminal and explanation side by side instead
+     of stacked into a column. */
+  .wrap { margin: 0 auto; }
   h1 { font-size: 1.5rem; margin: 0 0 .35rem; }
   .sub { color: var(--muted); margin: 0 0 1.1rem; line-height: 1.5; }
   .tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
@@ -38,7 +41,17 @@
   .ctl.primary { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
   .count { margin-left: auto; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
 
-  .stage { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; align-items: start; }
+  /* Names the TODO the current step is for, on EVERY step -- the device the
+     1400 steppers use. The hand-off card at the end of a tab says "go write
+     it"; this says "this is the one" the whole way through. */
+  .todobar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+             background: #fff8e1; border-left: 5px solid #8f6a00;
+             border-radius: 0 8px 8px 0; padding: .5rem .85rem; margin-bottom: 14px; }
+  .todobar .tag { background: #8f6a00; color: #fff; border-radius: 4px;
+                  padding: .1rem .5rem; font-size: .76rem; letter-spacing: .05em; }
+  .todobar .what { font-size: .93rem; }
+  .todobar code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .89rem; }
+  .stage { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 20px; align-items: start; }
   @media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
 
   .pipe { border: 1px solid var(--line); border-radius: 9px; padding: 14px; background: #fff; }
@@ -297,14 +310,16 @@ var MODES = {
     label: "What is main.cpp?",
     show: ["main.cpp"],
     frames: [
-      f({ files: ALL_SOURCE_OK, active: "main.cpp",
+      f({ todo: "Part 1 &mdash; <code>src/main.cpp</code>, TODO 1a &amp; 1b",
+          files: ALL_SOURCE_OK, active: "main.cpp",
           term: [["cmd","$ ls src/"],["","greeting.cpp   main.cpp"],
                  ["dim","# two .cpp files. Only one of them runs. Start with main.cpp."]],
           title: "Start with one file",
           body: "Your repo has three files, but only one of them <em>runs</em>: <code>main.cpp</code>. Forget the other two until tab 2. In Python you had one <code>.py</code> and ran it &mdash; this is the closest thing to that.",
           code: { file: "src/main.cpp", lines: MAIN_MINIMAL, hl: -1 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "main.cpp",
+      f({ todo: "Part 1 &mdash; <code>src/main.cpp</code>, TODO 1a &amp; 1b",
+          files: ALL_SOURCE_OK, active: "main.cpp",
           term: [["cmd","$ g++ -c src/main.cpp"],
                  ["err","error: 'cout' is not a member of 'std'"],
                  ["dim","# ...that is what happens with the #include line deleted."]],
@@ -312,14 +327,16 @@ var MODES = {
           body: "<code>std::cout</code> is not built into the language. It lives in a library called <strong>iostream</strong> (\"input/output stream\"), and <code>#include</code> is how you pull it in. <strong>Closest Python equivalent: <code>import</code>.</strong><br><br>Delete that line and the compiler stops knowing what <code>cout</code> is &mdash; the error above. The angle brackets <code>&lt; &gt;</code> mean \"a library that came with C++\"; quotes mean \"a file of mine\", which is how <code>greeting.h</code> gets included in tab 2.",
           code: { file: "src/main.cpp", lines: MAIN_MINIMAL, hl: 0 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "main.cpp",
+      f({ todo: "Part 1 &mdash; <code>src/main.cpp</code>, TODO 1a &amp; 1b",
+          files: ALL_SOURCE_OK, active: "main.cpp",
           term: [["cmd","$ ./build/ct0-hello-cpp"],["","Hello, C++!"],
                  ["dim","# that output came from inside main() -- nothing else ran"]],
           title: "It starts at main(), not at line 1",
           body: "This is the first real difference from Python. Python runs your file <strong>from the top down</strong>. C++ looks for a function called <code>main</code> and starts there &mdash; wherever it happens to sit in the file. Code outside a function never runs on its own.",
           code: { file: "src/main.cpp", lines: MAIN_MINIMAL, hl: 2 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "main.cpp",
+      f({ todo: "Part 1 &mdash; <code>src/main.cpp</code>, TODO 1a (your first <code>cout</code>)",
+          files: ALL_SOURCE_OK, active: "main.cpp",
           term: [["cmd","$ ./build/ct0-hello-cpp"],["","Hello, C++!"]],
           title: "Printing a line",
           body: "<code>std::cout</code> is the console. <code>&lt;&lt;</code> means \"send this to it\", and you can chain as many as you like. <strong><code>cout</code> never adds a newline</strong> &mdash; <code>print()</code> did that for you, and now <code>'\\n'</code> is your job.",
@@ -330,7 +347,8 @@ var MODES = {
           ],
           code: { file: "src/main.cpp", lines: MAIN_MINIMAL, hl: 4 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "main.cpp",
+      f({ todo: "Part 1 &mdash; <code>src/main.cpp</code>, TODO 1b (chain two values)",
+          files: ALL_SOURCE_OK, active: "main.cpp",
           term: [["cmd","$ ./build/ct0-hello-cpp"],["","Hello, C++!"],
                  ["cmd","$ echo $?          # what did the program report?"],
                  ["ok","0"],
@@ -339,7 +357,8 @@ var MODES = {
           body: "<code>main</code> hands a number back to the operating system when it finishes. <strong>0 means success</strong>; anything else means something went wrong. You will almost always write <code>return 0;</code> and move on &mdash; but that is what the <code>int</code> in <code>int main()</code> is for.",
           code: { file: "src/main.cpp", lines: MAIN_MINIMAL, hl: 5 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "main.cpp",
+      f({ todo: "Part 1 &mdash; <code>src/main.cpp</code>, TODO 1a &amp; 1b",
+          files: ALL_SOURCE_OK, active: "main.cpp",
           term: [["ok","  that is a complete C++ program -- seven lines"]],
           title: "That is a whole program",
           body: "Seven lines where Python needed one, and now you know what every piece is doing: <code>#include</code> brings in the printing library, <code>main</code> is where it starts, <code>&lt;&lt;</code> sends text out, <code>;</code> ends each statement, <code>{ }</code> marks the block, <code>return 0</code> reports success.<br><br>Tab 2 asks the next question: <strong>why are there two more files?</strong>",
@@ -355,44 +374,51 @@ var MODES = {
     // Also files-only. Object files and the executable are tab 3's subject.
     show: ["main.cpp", "greeting.cpp", "greeting.h"],
     frames: [
-      f({ files: ALL_SOURCE_OK, active: "greeting.cpp",
+      f({ todo: "Part 2 &mdash; <code>src/greeting.cpp</code>, TODO 2",
+          files: ALL_SOURCE_OK, active: "greeting.cpp",
           term: [["dim","# greeting.cpp -- a second file, with one job."]],
           title: "One file would work. It just would not stay pleasant.",
           body: "Everything could live in <code>main.cpp</code>, and for a seven-line program it should. But programs grow, and jobs that have nothing to do with each other end up in one scrolling file. <code>greeting.cpp</code> holds one job: building a greeting.<br><br><strong>This is probably new to you.</strong> In Python you likely wrote one file per program.",
           code: { file: "src/greeting.cpp", lines: GREETING_OK, hl: 0 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "main.cpp", bad: "main.cpp",
+      f({ todo: "Part 2 &mdash; <code>src/greeting.cpp</code>, TODO 2",
+          files: ALL_SOURCE_OK, active: "main.cpp", bad: "main.cpp",
           term: [["err","src/main.cpp:5:18: error: 'greeting' was not declared in this scope"]],
           title: "But main.cpp cannot see it",
           body: "Two files, sitting side by side, and <code>main.cpp</code> has <strong>no idea the other one exists</strong>. C++ reads each file on its own and will not let you call something it has never heard of. Putting the code in a second file is not enough &mdash; you have to introduce them.",
           code: { file: "src/main.cpp", lines: MAIN_NO_INCLUDE, hl: 4 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "greeting.h",
+      f({ todo: "Part 2 &mdash; <code>include/greeting.h</code> (given &mdash; you only read it)",
+          files: ALL_SOURCE_OK, active: "greeting.h",
           term: [["dim","# greeting.h -- the introduction. One line of it."]],
           title: "greeting.h is the introduction",
           body: "It says what <code>greeting</code> <em>looks like</em> &mdash; its name, what goes in, what comes out &mdash; and stops at the <code>;</code>. <strong>No working code at all.</strong> <code>main.cpp</code> includes it, and that is enough to make the call legal.",
           code: { file: "include/greeting.h", lines: GREETING_H, hl: 5 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "main.cpp",
+      f({ todo: "Part 2 &mdash; <code>include/greeting.h</code> (given &mdash; you only read it)",
+          files: ALL_SOURCE_OK, active: "main.cpp",
           term: [["cmd","$ g++ -c src/main.cpp"],["ok","  compiles. No header needed -- I typed the line myself."]],
           title: "\"Then why not just type that line myself?\"",
           body: "Fair question, and it <strong>works</strong>. With one caller, a header buys you nothing, and you are right to be suspicious of it. Watch what happens when the program grows.",
           code: { file: "src/main.cpp (my own declaration)", lines: MAIN_OWN_DECL, hl: 1 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "greeting.h", bad: "greeting.h",
+      f({ todo: "Part 2 &mdash; <code>include/greeting.h</code> (given &mdash; you only read it)",
+          files: ALL_SOURCE_OK, active: "greeting.h", bad: "greeting.h",
           term: [["dim","# now three files call greeting(). Three hand-typed copies."],
                  ["err","# change the function and you must fix all three, correctly."]],
           title: "Until a second file needs it",
           body: "Every caller needs that line, so the same declaration gets copied into three files. Change the function and <strong>every copy has to change with it</strong>. A header is <strong>one copy of the truth</strong> that every caller pulls in automatically &mdash; that is the whole job it does.",
           code: { file: "three files, three copies", lines: TWO_CALLERS, hl: 4 } }),
 
-      f({ files: ALL_SOURCE_OK, active: "main.cpp",
+      f({ todo: "Part 2 &mdash; no <code>main.h</code> exists, and that is the point",
+          files: ALL_SOURCE_OK, active: "main.cpp",
           term: [["dim","# notice what is missing from this repo: there is no main.h"]],
           title: "So why is there no main.h?",
           body: "Because <strong>nothing in your program calls <code>main</code></strong> &mdash; the operating system does, from outside. A header exists so <em>other files</em> can call your code. <code>main</code> has no callers to introduce itself to.<br><br><strong>A <code>.cpp</code> gets a header only when something else needs to call into it.</strong>",
           code: { file: "src/main.cpp", lines: MAIN_NO_HEADER_NEEDED, hl: 1 } }),
 
-      f({ files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
+      f({ todo: "Part 2 &mdash; <code>src/greeting.cpp</code>, TODO 2",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"pending", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           active: "greeting.h",
           term: [["ok","  greeting.h   the promise -- what it looks like"],
@@ -409,34 +435,39 @@ var MODES = {
   ok: {
     label: "How a build works",
     frames: [
-      f({ files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
+      f({ todo: "Part 2 &mdash; <code>src/greeting.cpp</code>, TODO 2",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"pending", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           term: [["dim","# three files on disk. Nothing has been built yet."]],
           title: "What you start with",
           body: "These three files are <strong>already in your repo</strong> &mdash; you do not create them. The split across two <code>.cpp</code> files and a header is given to you; what you add are the bodies marked <code>// TODO</code>. <code>greeting.h</code> is the <strong>promise</strong>, and you never edit it in this assignment." }),
 
-      f({ active:"main.cpp",
+      f({ todo: "Part 2 &mdash; <code>src/greeting.cpp</code>, TODO 2",
+          active:"main.cpp",
           files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"pending", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           term: [["cmd","$ g++ -c src/main.cpp -o main.o"],["dim","  preprocessing: pasting in <iostream> and greeting.h ..."]],
           title: "1. Preprocess",
           body: "The preprocessor is a <strong>text</strong> tool. Every <code>#include</code> is replaced by the entire contents of that file. No C++ is understood yet &mdash; it is copy and paste." }),
 
-      f({ files: ALL_SOURCE_OK, active: "main.cpp",
+      f({ todo: "Part 2 &mdash; <code>src/greeting.cpp</code>, TODO 2",
+          files: ALL_SOURCE_OK, active: "main.cpp",
           term: [["cmd","$ g++ -E src/main.cpp   # preprocess only, don't compile"],
                  ["dim","  #include \"greeting.h\" replaced by the text of greeting.h"]],
           title: "...and this is the result",
           body: "Here is what the compiler actually sees. <code>main.cpp</code> now carries the <em>signature</em> of <code>greeting</code> &mdash; still not a line of its body. Harmless to paste into every file, which is exactly why a header is safe to share and a <code>.cpp</code> is not.",
           code: { file: "src/main.cpp (after preprocessing)", lines: MAIN_AFTER_PP, hl: 1 } }),
 
-      f({ active:"main.o",
+      f({ todo: "Part 2 &mdash; <code>src/greeting.cpp</code>, TODO 2",
+          active:"main.o",
           files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           term: [["cmd","$ g++ -c src/main.cpp -o main.o"],["ok","  main.o written"]],
           title: "2. Compile &mdash; one file, on its own",
           body: "<code>main.o</code> is machine code for <em>this file only</em>. It contains a <strong>call</strong> to <code>greeting</code> with a note saying \"someone else will supply this.\" The compiler accepts that because the header promised it." }),
 
-      f({ active:"greeting.o",
+      f({ todo: "Part 2 &mdash; <code>src/greeting.cpp</code>, TODO 2",
+          active:"greeting.o",
           files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"pending" },
           term: [["cmd","$ g++ -c src/greeting.cpp -o greeting.o"],["ok","  greeting.o written"]],
@@ -444,14 +475,16 @@ var MODES = {
           body: "Compiled separately, with no knowledge of <code>main.cpp</code>. This one holds the <strong>body</strong> of <code>greeting</code> &mdash; the code that keeps the promise.",
           code: { file:"src/greeting.cpp", lines: GREETING_OK, hl: 2 } }),
 
-      f({ active:"ct0-hello-cpp",
+      f({ todo: "Part 2 &mdash; <code>src/greeting.cpp</code>, TODO 2",
+          active:"ct0-hello-cpp",
           files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"ok" },
           term: [["cmd","$ g++ main.o greeting.o -o ct0-hello-cpp"],["ok","  ct0-hello-cpp written"]],
           title: "3. Link",
           body: "The linker takes every <code>.o</code> at once and matches each unresolved call to the code that defines it. <code>main.o</code> wanted <code>greeting</code>; <code>greeting.o</code> has it. <strong>Match found</strong>, and one program comes out." }),
 
-      f({ files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
+      f({ todo: "Part 3 &mdash; <code>src/main.cpp</code>, TODO 3a&ndash;3c",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"ok" },
           active:"ct0-hello-cpp",
           term: [["cmd","$ ./build/ct0-hello-cpp"],["","Hello, C++!"],["","What is your name? Ada Lovelace"],["","Hello, Ada Lovelace!"]],
@@ -466,21 +499,24 @@ var MODES = {
   compile: {
     label: "Compiler error",
     frames: [
-      f({ files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
+      f({ todo: "Part 2 &mdash; break it: delete the <code>;</code> in <code>greeting.cpp</code>",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"pending", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           term: [["dim","# Part 2, break #1: delete the semicolon after return."]],
           title: "The change",
           body: "One character removed from <code>greeting.cpp</code>. Everything else is untouched.",
           code: { file:"src/greeting.cpp", lines: GREETING_NO_SEMI, hl: 2 } }),
 
-      f({ active:"main.o",
+      f({ todo: "Part 2 &mdash; break it: delete the <code>;</code> in <code>greeting.cpp</code>",
+          active:"main.o",
           files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           term: [["cmd","$ g++ -c src/main.cpp -o main.o"],["ok","  main.o written"]],
           title: "main.cpp still compiles",
           body: "It never saw the broken line. Files are compiled <strong>independently</strong>, so a mistake in one does not stop the other." }),
 
-      f({ active:"greeting.cpp", bad:"greeting.cpp",
+      f({ todo: "Part 2 &mdash; break it: delete the <code>;</code> in <code>greeting.cpp</code>",
+          active:"greeting.cpp", bad:"greeting.cpp",
           files: { "main.cpp":"ok", "greeting.cpp":"bad", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           term: [["cmd","$ g++ -c src/greeting.cpp -o greeting.o"],
@@ -492,7 +528,8 @@ var MODES = {
           body: "<strong>That is the signature of a compiler error.</strong> It is reading one file, character by character, so it can point at the exact spot: <code>greeting.cpp:32</code>.",
           code: { file:"src/greeting.cpp", lines: GREETING_NO_SEMI, hl: 2 } }),
 
-      f({ files: { "main.cpp":"ok", "greeting.cpp":"bad", "greeting.h":"ok",
+      f({ todo: "Part 2 &mdash; put the <code>;</code> back before moving on",
+          files: { "main.cpp":"ok", "greeting.cpp":"bad", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           term: [["dim","# no greeting.o was produced, so there is nothing to link."],
                  ["err","make: *** [greeting.o] Error 1"]],
@@ -507,28 +544,32 @@ var MODES = {
   link: {
     label: "Linker error",
     frames: [
-      f({ files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
+      f({ todo: "Part 2 &mdash; break it: comment out <code>greeting()</code>",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"pending", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           term: [["dim","# Part 2, break #2: comment out the whole greeting() function."]],
           title: "The change",
           body: "The <strong>definition</strong> is gone. But <code>greeting.h</code> &mdash; the promise &mdash; is untouched, and that is what makes this interesting.",
           code: { file:"src/greeting.cpp", lines: GREETING_COMMENTED, hl: -1 } }),
 
-      f({ active:"main.o",
+      f({ todo: "Part 2 &mdash; break it: comment out <code>greeting()</code>",
+          active:"main.o",
           files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
           term: [["cmd","$ g++ -c src/main.cpp -o main.o"],["ok","  main.o written"]],
           title: "main.cpp compiles happily",
           body: "It calls <code>greeting(name)</code>, and <code>greeting.h</code> promised that exists. The compiler believes the header. <strong>It never checks whether anyone wrote the code.</strong>" }),
 
-      f({ active:"greeting.o",
+      f({ todo: "Part 2 &mdash; break it: comment out <code>greeting()</code>",
+          active:"greeting.o",
           files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"pending" },
           term: [["cmd","$ g++ -c src/greeting.cpp -o greeting.o"],["ok","  greeting.o written (but it is nearly empty)"]],
           title: "greeting.cpp compiles too",
           body: "A file of comments is valid C++. It compiles without complaint and produces a real <code>.o</code> &mdash; one that happens to contain no <code>greeting</code>. <strong>Two green checkmarks, and the program is already doomed.</strong>" }),
 
-      f({ active:"ct0-hello-cpp", bad:"ct0-hello-cpp",
+      f({ todo: "Part 2 &mdash; break it: comment out <code>greeting()</code>",
+          active:"ct0-hello-cpp", bad:"ct0-hello-cpp",
           files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"bad" },
           term: [["cmd","$ g++ main.o greeting.o -o ct0-hello-cpp"],
@@ -538,7 +579,8 @@ var MODES = {
           title: "Fails at the last step &mdash; and names no line",
           body: "<strong>That is the signature of a linker error.</strong> There is no line to point at, because no single line is wrong. A whole definition is missing, and nothing notices until every <code>.o</code> is on the table at once." }),
 
-      f({ files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
+      f({ todo: "Part 2 &mdash; never <code>#include</code> a <code>.cpp</code>",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"bad" },
           term: [["dim","# How to read it:"],
                  ["dim","#   has file:line  -> compiler. One file is malformed."],
@@ -550,7 +592,8 @@ var MODES = {
                    "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"bad" },
           active: "ct0-hello-cpp" }),
 
-      f({ files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
+      f({ todo: "Part 2 &mdash; undo both breaks, then Part 3",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok",
                    "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"bad" },
           term: [["dim","# How to read it:"],
                  ["dim","#   has file:line  -> compiler. One file is malformed."],
@@ -652,6 +695,13 @@ function render() {
   var fr = frames()[state.i];
   var stage = document.getElementById("stage");
   stage.innerHTML = "";
+
+  if (fr.todo) {
+    var tb = el("div", "todobar");
+    tb.appendChild(el("span", "tag", "THIS STEP IS FOR"));
+    tb.appendChild(el("span", "what", fr.todo));
+    stage.appendChild(tb);
+  }
 
   var grid = el("div", "stage");
 
