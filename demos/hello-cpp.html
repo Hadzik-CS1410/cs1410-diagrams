@@ -181,14 +181,7 @@
 
   <div id="stage"></div>
 
-  <div class="legend" id="legend">
-    <span><i style="border-color:#2980b9;background:#eaf2f8"></i>source file (in your repo)</span>
-    <span><i style="border-color:#8e44ad;background:#f5eef8"></i>object file (<code>.o</code>)</span>
-    <span><i style="border-color:#27ae60;background:#f0faf0"></i>the executable</span>
-    <span><i style="border-color:#e67e22"></i>happening now</span>
-    <span><i style="border-color:#c0392b;background:#fdecea"></i>where it failed</span>
-    <span><i style="border-style:dashed"></i>doesn't exist yet</span>
-  </div>
+  <div class="legend" id="legend"></div>
 
   <div class="selftest" id="selftest"></div>
 </div>
@@ -721,7 +714,53 @@ function colourCpp(line) {
   return out + esc(line.slice(last));
 }
 
+// The legend used to list all six states on every tab, including the three
+// that only exist once object files appear. On tab 1 -- one box, one colour --
+// four of the six entries described nothing on screen. It is now built from
+// what the current tab actually draws.
+function renderLegend() {
+  var node = document.getElementById("legend");
+  node.innerHTML = "";
+  if (state.mode === "compare") { node.style.display = "none"; return; }
+  node.style.display = "";
+
+  var mode = MODES[state.mode];
+  var only = mode.show || null;
+  var shown = {};
+  PIPE_ROWS.forEach(function (row) {
+    row.items.forEach(function (nm) {
+      if (!only || only.indexOf(nm) >= 0) shown[nm] = row.kind;
+    });
+  });
+
+  var anyPending = false, anyBad = false;
+  mode.frames.forEach(function (fr) {
+    Object.keys(shown).forEach(function (nm) {
+      if (fr.files[nm] === "pending") anyPending = true;
+      if (fr.files[nm] === "bad") anyBad = true;
+    });
+  });
+
+  var kinds = {};
+  Object.keys(shown).forEach(function (nm) { kinds[shown[nm]] = true; });
+
+  var entries = [];
+  if (kinds.src) entries.push(["border-color:#2980b9;background:#eaf2f8", "source file (in your repo)"]);
+  if (kinds.obj) entries.push(["border-color:#8e44ad;background:#f5eef8", "object file (<code>.o</code>)"]);
+  if (kinds.exe) entries.push(["border-color:#27ae60;background:#f0faf0", "the executable"]);
+  entries.push(["border-color:#e67e22", "happening now"]);
+  if (anyBad) entries.push(["border-color:#c0392b;background:#fdecea", "where it failed"]);
+  if (anyPending) entries.push(["border-style:dashed", "doesn't exist yet"]);
+
+  entries.forEach(function (e) {
+    var sp = document.createElement("span");
+    sp.innerHTML = '<i style="' + e[0] + '"></i>' + e[1];
+    node.appendChild(sp);
+  });
+}
+
 function render() {
+  renderLegend();   // before the compare early-return, or that tab keeps the last one
   if (state.mode === "compare") { renderCompare(); return; }
   var fr = frames()[state.i];
   var stage = document.getElementById("stage");
@@ -867,7 +906,6 @@ Array.prototype.forEach.call(document.querySelectorAll("#tabs [data-mode]"), fun
     Array.prototype.forEach.call(document.querySelectorAll("#tabs [data-mode]"), function (o) {
       o.setAttribute("aria-selected", String(o === b));
     });
-    document.getElementById("legend").style.display = state.mode === "compare" ? "none" : "";
     render();
   });
 });
@@ -924,11 +962,15 @@ document.addEventListener("keydown", function (e) {
   var cm = MODES.compile.frames[2];
   ok(cm.files["greeting.o"] === "pending", "compiler tab: greeting.o is never produced");
 
+  // Silent when it passes. This is a guard for whoever edits the frames, not
+  // something a student needs to read -- but a failure must be impossible to
+  // miss, so it shouts when there is one.
   var node = document.getElementById("selftest");
-  node.textContent = fails.length
-    ? "Self-test: " + fails.length + " problem(s) -- " + fails.join("; ")
-    : "Self-test: all frames consistent.";
-  node.style.color = fails.length ? "#c0392b" : "#5b6b7a";
+  if (!fails.length) { node.style.display = "none"; return; }
+  node.style.display = "";
+  node.style.color = "#c0392b";
+  node.style.fontWeight = "700";
+  node.textContent = "Stepper self-test: " + fails.length + " problem(s) -- " + fails.join("; ");
 })();
 
 render();
