@@ -72,11 +72,14 @@
 
   .side { display: flex; flex-direction: column; gap: 14px; }
   .card { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; background: #fff; }
-  .card h3 { margin: 0 0 .4rem; font-size: 1.02rem; }
-  .card p { margin: .35rem 0; line-height: 1.5; font-size: .95rem; }
+  .card h3 { margin: 0 0 .45rem; font-size: 1.15rem; }
+  .card p { margin: .35rem 0; line-height: 1.5; font-size: 1.05rem; }
   .card .blist { margin: .3rem 0 0; padding-left: 1.15rem; }
-  .card .blist li { margin: .3rem 0; line-height: 1.45; font-size: .95rem; }
-  .card.deeper .blist li { font-size: .93rem; }
+  /* The bullets ARE the explanation, so they get read from the back of the
+     room: 1.1rem, same as the THIS STEP pill. The heading stays a step above
+     them so it still leads. */
+  .card .blist li { margin: .38rem 0; line-height: 1.5; font-size: 1.1rem; }
+  .card.deeper .blist li { font-size: 1rem; }
   .termwrap { border-radius: 9px; overflow: hidden; }
   .termwrap .tlabel { background: #11151c; color: #7d8795; padding: 5px 12px;
                       font-family: Consolas, "SF Mono", Menlo, monospace;
@@ -138,7 +141,7 @@
   .tag { font-weight: 700; }
   .tag.okT { color: var(--green); } .tag.badT { color: var(--red); }
   .card.deeper { border-left: 4px solid var(--blue); background: #f7fbfe; }
-  .card.deeper h3 { color: #1b5e8a; font-size: .95rem; }
+  .card.deeper h3 { color: #1b5e8a; font-size: 1.02rem; }
   .card.deeper p { font-size: .93rem; }
   .card.action { border: 2px solid var(--green); background: var(--greenBg); }
   .card.action h3 { color: #1c7e45; }
