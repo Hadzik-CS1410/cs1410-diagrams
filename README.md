@@ -13,3 +13,4 @@ lives with its assignment in `cs1410-full-course`. Edit it there, then run:
 | Demo | Master copy |
 |---|---|
 | `demos/hello-cpp.html` | `module0-getting-started/assignments/ct0-hello-cpp/images/stepper.html` |
+| `demos/branches-and-prs.html` | `module2-functions-debugging/assignments/ct2-functions-references/images/stepper.html` |
