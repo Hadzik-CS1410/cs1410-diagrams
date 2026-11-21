@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 1410 &middot; Branches &amp; Pull Requests, one step at a time</title>
+<style>
+  :root {
+    --ink: #2c3e50; --muted: #5b6b7a; --line: #d7dae0; --bg: #fcfcfd;
+    --blue: #2980b9; --blueBg: #eaf2f8;
+    --purple: #8e44ad; --purpleBg: #f5eef8;
+    --green: #27ae60; --greenBg: #f0faf0;
+    --orange: #e67e22;
+    --red: #c0392b; --redBg: #fdecea;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px 64px;
+         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+         color: var(--ink); background: #fff; }
+  .wrap { margin: 0 auto; }
+  h1 { font-size: 1.35rem; margin: 0 0 .35rem; }
+  .sub { color: var(--muted); margin: 0 0 1.1rem; line-height: 1.5; font-size: .9rem; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+          border-bottom: 2px solid var(--line); padding-bottom: 10px; margin-bottom: 14px; }
+  .tabs button { font-size: .95rem; font-weight: 600; cursor: pointer; padding: 8px 14px;
+                 border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); }
+  .tabs button[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .spacer { flex: 1; }
+  .hint { color: var(--muted); font-size: .85rem; }
+  .panel { border: 1px solid var(--line); border-radius: 9px; background: var(--bg);
+           padding: 10px 12px; margin-bottom: 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .lbl { font-weight: 700; font-size: .85rem; color: var(--muted);
+         text-transform: uppercase; letter-spacing: .04em; min-width: 54px; }
+  .ctl { font: inherit; cursor: pointer; padding: 6px 12px; border: 1px solid var(--line);
+         border-radius: 6px; background: #fff; color: var(--ink); }
+  .ctl:disabled { opacity: .4; cursor: default; }
+  .ctl.primary { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
+  .count { margin-left: auto; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+
+  .todobar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+             background: #fff8e1; border-left: 5px solid #8f6a00;
+             border-radius: 0 8px 8px 0; padding: .5rem .85rem; margin-bottom: 14px; }
+  .todobar .tag { background: #8f6a00; color: #fff; border-radius: 4px;
+                  padding: .1rem .5rem; font-size: .76rem; letter-spacing: .05em; font-weight: 700; }
+  .todobar .what { font-size: 1rem; }
+  .todobar code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .89rem; }
+
+  .stage { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr);
+           gap: 20px; align-items: start; }
+  @media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
+
+  .pipe { border: 1px solid var(--line); border-radius: 9px; padding: 14px; background: #fff; }
+
+  /* ---- the commit graph ---------------------------------------------- */
+  .where { font-size: .78rem; font-weight: 700; letter-spacing: .05em;
+           text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
+  .lane { display: flex; align-items: center; gap: .55rem; margin: 0 0 .7rem; flex-wrap: wrap; }
+  .lane .nm { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .95rem;
+              font-weight: 700; min-width: 7.5rem; }
+  .lane .nm.branch { color: var(--purple); }
+  .lane .nm.main { color: var(--blue); }
+  .dot { width: 1.55rem; height: 1.55rem; border-radius: 50%; border: 2px solid var(--line);
+         background: #fff; display: inline-flex; align-items: center; justify-content: center;
+         font-size: .72rem; font-weight: 700; color: var(--muted); }
+  .dot.on-main { border-color: var(--blue); background: var(--blueBg); color: #1b5e8a; }
+  .dot.on-branch { border-color: var(--purple); background: var(--purpleBg); color: #6c3483; }
+  .dot.fresh { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(230,126,34,.22); }
+  .conn { color: var(--line); font-size: 1.1rem; }
+  .head { background: var(--ink); color: #fff; border-radius: 4px; padding: .1rem .45rem;
+          font-size: .7rem; font-weight: 800; letter-spacing: .05em; }
+  .lane .none { color: var(--muted); font-style: italic; font-size: .9rem; }
+  .pushed { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: .1rem .55rem;
+            background: #e8f5e9; color: #1c7e45; border: 1px solid #bfe3c9; }
+  .notpushed { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: .1rem .55rem;
+               background: #f2f4f7; color: #6b7684; border: 1px dashed #c7ccd4; }
+  .sep { border: 0; border-top: 1px dashed var(--line); margin: .9rem 0; }
+
+  /* ---- the pull request card ----------------------------------------- */
+  .prcard { border: 2px solid var(--line); border-radius: 9px; padding: .7rem .9rem;
+            margin-top: .4rem; background: #fff; }
+  .prcard.open { border-color: var(--green); background: var(--greenBg); }
+  .prcard.merged { border-color: var(--purple); background: var(--purpleBg); }
+  .prcard .t { font-weight: 800; font-size: .98rem; }
+  .prcard .meta { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .88rem;
+                  color: #1b5e8a; margin-top: .25rem; }
+  .prcard .state { font-size: .74rem; font-weight: 800; letter-spacing: .05em;
+                   border-radius: 999px; padding: .1rem .6rem; margin-left: .4rem; }
+  .prcard.open .state { background: var(--green); color: #fff; }
+  .prcard.merged .state { background: var(--purple); color: #fff; }
+
+  /* ---- the diff ------------------------------------------------------- */
+  .codebox { --code-bg:#1e1e2e; --code-fg:#cdd6f4; --code-hit:#45475a;
+             border-radius: 8px; overflow: hidden; background: var(--code-bg); margin-top: .8rem; }
+  .codebox .fn { background: #181825; color: #9399b2; padding: 6px 11px; font-weight: 700;
+                 font-size: .78rem; font-family: Consolas, "SF Mono", Menlo, monospace;
+                 border-bottom: 1px solid #313244; }
+  .codebox .body { padding: .6rem 0; overflow-x: auto; color: var(--code-fg);
+                   font-family: Consolas, "Courier New", monospace;
+                   font-size: 1.35rem; line-height: 1.6; }
+  .codebox .ln { padding: 0 .8rem; white-space: pre; }
+  .codebox .ln.add { background: rgba(64,160,43,.22); color: #b7f0a8; }
+  .codebox .ln.del { background: rgba(192,57,43,.20); color: #ffb3aa; }
+  .codebox .ln.hl { background: var(--code-hit); display: flex; align-items: center; flex-wrap: wrap; }
+  .codebox .ln.hl .src { white-space: pre; padding-right: 1.6rem; }
+  .codebox .calc { background: #f9e2af; color: #1e1e2e; font-weight: 600; white-space: pre-wrap;
+                   border-radius: 5px; padding: .1rem .75rem; font-size: 1.1rem; }
+  .codebox .calc::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800;
+                           letter-spacing: .06em; color: #4a3600; background: rgba(0,0,0,.10);
+                           border-radius: 3px; padding: .08rem .4rem; margin-right: .55rem; }
+
+  .side { display: flex; flex-direction: column; gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; background: #fff; }
+  .card h3 { margin: 0 0 .45rem; font-size: 1.15rem; }
+  .card .blist { margin: .3rem 0 0; padding-left: 1.15rem; }
+  .card .blist li { margin: .38rem 0; line-height: 1.5; font-size: 1.1rem; }
+  .card.deeper { border-left: 4px solid var(--blue); background: #f7fbfe; }
+  .card.deeper h3 { color: #1b5e8a; font-size: 1.02rem; }
+  .card.deeper .blist li { font-size: 1rem; }
+  .card.action { border: 2px solid var(--green); background: var(--greenBg); }
+  .card.action h3 { color: #1c7e45; }
+  .card.action .whereto { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .86rem;
+                          background: #fff; border: 1px solid #bfe3c9; border-radius: 6px;
+                          padding: 6px 9px; display: inline-block; margin: .3rem 0; }
+
+  .termwrap { border-radius: 9px; overflow: hidden; }
+  .termwrap .tlabel { background: #11151c; color: #7d8795; padding: 5px 12px;
+                      font-family: Consolas, "SF Mono", Menlo, monospace;
+                      font-size: .76rem; font-weight: 700; letter-spacing: .08em; }
+  .term { background: #1e2430; color: #e6e9ef; padding: 12px 14px;
+          font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 1.2rem;
+          line-height: 1.55; white-space: pre-wrap; min-height: 104px; }
+  .term .cmd { color: #8fd4ff; }
+  .term .err { color: #ff9a8f; }
+  .term .ok  { color: #9ae6a4; }
+  .term .dim { color: #9aa4b2; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 14px 0 0;
+            color: var(--muted); font-size: .82rem; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line);
+              border-radius: 50%; vertical-align: -2px; margin-right: 5px; }
+  .selftest { margin-top: 18px; font-size: .84rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Branches &amp; Pull Requests &mdash; one step at a time</h1>
+  <p class="sub">
+    You already know <code>commit</code> and <code>push</code>. This is the next piece: working on a
+    <strong>branch</strong>, then opening a <strong>pull request</strong> so the change can be read before it
+    joins <code>main</code>. <strong>Take the tabs in order.</strong>
+  </p>
+
+  <div class="tabs" id="tabs">
+    <button data-mode="line" aria-selected="true">1 &middot; What a repo looks like</button>
+    <button data-mode="branch">2 &middot; Branching</button>
+    <button data-mode="pr">3 &middot; The pull request</button>
+    <button data-mode="oops">4 &middot; When it goes wrong</button>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <span class="lbl">Step</span>
+      <button class="ctl" id="first">&laquo; First</button>
+      <button class="ctl" id="prev">&lsaquo; Prev</button>
+      <button class="ctl primary" id="play">&#9654; Play</button>
+      <button class="ctl" id="next">Next &rsaquo;</button>
+      <button class="ctl" id="last">Last &raquo;</button>
+      <span class="count" id="frameCount"></span>
+    </div>
+  </div>
+
+  <div id="stage"></div>
+  <div class="legend" id="legend"></div>
+  <div class="selftest" id="selftest"></div>
+</div>
+
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+// Each frame is the whole world at that step, not a diff from the last one --
+// so stepping backwards is just re-rendering and no state can drift.
+//
+//   local / remote : [{name, kind, commits:[{id, fresh}], head}]
+//   pr             : null | {state:"open"|"merged", title, files, adds, dels}
+//   diff           : optional [{t:"add"|"del"|"ctx", s:"text"}]
+//   term           : [[class, text], ...]
+//   title / body   : the explanation card (body is a bullet array)
+//   lineNote       : THIS STEP, inline on the highlighted diff row
+//   more           : optional "going deeper" bullets
+//   action         : the hand-off on a tab's last step
+// ---------------------------------------------------------------------------
+
+function f(o) { return o; }
+function C(n, fresh) { var a = []; for (var i = 1; i <= n; i++) a.push({ id: i, fresh: fresh === i }); return a; }
+
+var MODES = {
+
+// ===========================================================================
+line: {
+  label: "What a repo looks like",
+  frames: [
+    f({ todo: "Before you branch &mdash; know what you already have",
+        local:  [{ name: "main", kind: "main", commits: C(3), head: true }],
+        remote: [{ name: "main", kind: "main", commits: C(3), pushed: true }],
+        term: [["cmd", "$ git log --oneline"],
+               ["", "c3d4e5f  add the receipt total"],
+               ["", "b2c3d4e  print the header"],
+               ["", "a1b2c3d  first commit"]],
+        title: "A repo is a line of commits",
+        body: ["Each <strong>commit</strong> is one saved snapshot of your files.",
+               "They form a line, oldest on the left.",
+               "<code>main</code> is just a <strong>name pointing at the newest one</strong>.",
+               "<code>HEAD</code> means &ldquo;this is where you are working&rdquo;."] }),
+
+    f({ todo: "Before you branch &mdash; know what you already have",
+        local:  [{ name: "main", kind: "main", commits: C(3), head: true, dirty: true }],
+        remote: [{ name: "main", kind: "main", commits: C(3), pushed: true }],
+        term: [["cmd", "$ git status"],
+               ["err", "  modified:   src/main.cpp"],
+               ["dim", "no changes added to commit"]],
+        title: "Editing a file changes nothing yet",
+        body: ["You saved the file, but git has <strong>not recorded anything</strong>.",
+               "The line of commits is exactly as long as it was.",
+               "Nothing is safe until you commit."] }),
+
+    f({ todo: "Before you branch &mdash; know what you already have",
+        local:  [{ name: "main", kind: "main", commits: C(4, 4), head: true }],
+        remote: [{ name: "main", kind: "main", commits: C(3), pushed: true }],
+        term: [["cmd", "$ git commit -am &quot;add the tax line&quot;"],
+               ["ok", "[main d4e5f6g] add the tax line"],
+               ["dim", " 1 file changed, 6 insertions(+)"]],
+        title: "Commit adds a dot &mdash; on your computer only",
+        body: ["A fourth commit now exists <strong>locally</strong>.",
+               "GitHub still shows three. It has not been told.",
+               "<strong>Commit saves. Push shares.</strong> They are two different things."] }),
+
+    f({ todo: "Before you branch &mdash; know what you already have",
+        local:  [{ name: "main", kind: "main", commits: C(4), head: true }],
+        remote: [{ name: "main", kind: "main", commits: C(4, 4), pushed: true }],
+        term: [["cmd", "$ git push"],
+               ["ok", "   c3d4e5f..d4e5f6g  main -> main"]],
+        title: "Push catches GitHub up",
+        body: ["Now both copies have four commits.",
+               "<strong>Two copies exist at all times</strong>: yours and GitHub's.",
+               "Almost every confusing git moment is those two disagreeing."],
+        action: { do: "That is everything you already did in CS 1400. Tab 2 adds the one new idea: <strong>doing the work somewhere other than <code>main</code></strong>.",
+                  whereto: "next: 2 &middot; Branching",
+                  note: "Nothing to type yet &mdash; keep going." } })
+  ]
+},
+
+// ===========================================================================
+branch: {
+  label: "Branching",
+  frames: [
+    f({ todo: "Ritual step 1 &mdash; <code>git switch -c ct2-work</code>",
+        local:  [{ name: "main", kind: "main", commits: C(4), head: true }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true }],
+        term: [["dim", "# main is working code. You are about to change things."]],
+        title: "Why not just work on main?",
+        body: ["<code>main</code> is the version that <strong>works</strong>.",
+               "Half-finished work sitting on it means there is no known-good copy.",
+               "A <strong>branch</strong> is a second line you can break safely."] }),
+
+    f({ todo: "Ritual step 1 &mdash; <code>git switch -c ct2-work</code>",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(4), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true }],
+        term: [["cmd", "$ git switch -c ct2-work"],
+               ["ok", "Switched to a new branch 'ct2-work'"]],
+        title: "A branch starts as a copy of where you are",
+        body: ["<code>-c</code> means <strong>create</strong>.",
+               "The new branch starts at the <strong>same commit</strong> <code>main</code> is on.",
+               "No files changed. <code>HEAD</code> just moved to the new name.",
+               "GitHub does not know about it yet."] }),
+
+    f({ todo: "Ritual step 2 &mdash; do the work, commit as you go",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(6, 6), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true }],
+        term: [["cmd", "$ git commit -am &quot;convert to functions&quot;"],
+               ["ok", "[ct2-work 7a8b9c0] convert to functions"]],
+        title: "Commits land on the branch, not on main",
+        body: ["Two commits added &mdash; <strong>to <code>ct2-work</code></strong>.",
+               "<code>main</code> is still sitting at four and still works.",
+               "<strong>That is the whole point of a branch.</strong>"] }),
+
+    f({ todo: "Ritual step 3 &mdash; <code>git push -u origin ct2-work</code>",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
+                 { name: "ct2-work", kind: "branch", commits: C(6, 6), pushed: true, from: 4 }],
+        term: [["cmd", "$ git push -u origin ct2-work"],
+               ["ok", " * [new branch]      ct2-work -> ct2-work"],
+               ["dim", "branch 'ct2-work' set up to track 'origin/ct2-work'"]],
+        title: "Push the branch to GitHub",
+        body: ["<code>-u</code> links your branch to GitHub's copy, so later pushes are just <code>git push</code>.",
+               "GitHub now has <strong>both</strong> branches.",
+               "Still nothing merged. <code>main</code> is untouched on both sides."],
+        more: ["<strong>Why <code>switch</code> and not <code>checkout</code>?</strong> <code>git checkout</code> does about six unrelated jobs, which is why it confuses everyone. <code>git switch</code> was added to do exactly one of them. Older tutorials will show you <code>checkout -b</code>; it means the same thing here."],
+        action: { do: "You have a branch on GitHub with work on it. Tab 3 is what you do with it &mdash; <strong>the pull request</strong>.",
+                  whereto: "next: 3 &middot; The pull request",
+                  note: "This is the tab that matters. Take it slowly." } })
+  ]
+},
+
+// ===========================================================================
+pr: {
+  label: "The pull request",
+  frames: [
+    f({ todo: "Ritual step 4 &mdash; open the PR on GitHub",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
+                 { name: "ct2-work", kind: "branch", commits: C(6), pushed: true, from: 4 }],
+        term: [["dim", "# GitHub notices the new branch and offers a button:"],
+               ["ok", "  Compare & pull request"]],
+        title: "GitHub offers it for you",
+        body: ["Right after a push, your repo page shows a <strong>Compare &amp; pull request</strong> button.",
+               "You can also go to the <strong>Pull requests</strong> tab and press <strong>New</strong>.",
+               "Nothing has happened yet &mdash; this just opens a form."] }),
+
+    f({ todo: "Ritual step 4 &mdash; open the PR on GitHub",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
+                 { name: "ct2-work", kind: "branch", commits: C(6), pushed: true, from: 4 }],
+        pr: { state: "open", title: "Convert the converter to functions", files: 2, adds: 14, dels: 3 },
+        term: [["dim", "# base: main   <-   compare: ct2-work"],
+               ["ok", "  Pull request #1 opened"]],
+        title: "A pull request is a REQUEST",
+        body: ["It says: <em>please merge <code>ct2-work</code> into <code>main</code></em>.",
+               "<strong>It does not merge anything</strong> until someone presses the button.",
+               "It is a page that stays put &mdash; you can keep pushing to the branch and it updates.",
+               "Two names to know: <strong>base</strong> is where it is going, <strong>compare</strong> is where it came from."] }),
+
+    f({ todo: "Ritual step 5 &mdash; read your own diff",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
+                 { name: "ct2-work", kind: "branch", commits: C(6), pushed: true, from: 4 }],
+        pr: { state: "open", title: "Convert the converter to functions", files: 2, adds: 14, dels: 3 },
+        diff: [{ t: "ctx", s: "  int main()" },
+               { t: "ctx", s: "  {" },
+               { t: "del", s: "-     double f = c * 9.0 / 5.0 + 32;" },
+               { t: "add", s: "+     double f = toFahrenheit(c);" },
+               { t: "ctx", s: "      std::cout << f;" },
+               { t: "ctx", s: "  }" }],
+        diffHl: 3,
+        lineNote: "A <strong>green +</strong> line is added, a <strong>red -</strong> line is removed. This is the whole change.",
+        term: [["dim", "# the Files changed tab"],
+               ["", "2 changed files with 14 additions and 3 deletions"]],
+        title: "The diff is the point of the whole thing",
+        body: ["A PR shows <strong>exactly what changed</strong> &mdash; nothing else.",
+               "Red lines left, green lines arrived, grey lines are context.",
+               "This is the view your instructor sees, and later your teammates.",
+               "<strong>Read it before anyone else does.</strong>"] }),
+
+    f({ todo: "Ritual step 5 &mdash; read your own diff",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
+                 { name: "ct2-work", kind: "branch", commits: C(6), pushed: true, from: 4 }],
+        pr: { state: "open", title: "Convert the converter to functions", files: 2, adds: 14, dels: 3 },
+        term: [["dim", "# four things to check, every single time:"],
+               ["", "  1. did I change only what I meant to?"],
+               ["", "  2. is anything here by accident?"],
+               ["", "  3. does the build folder show up?  (it should not)"],
+               ["", "  4. would this make sense to someone else?"]],
+        title: "What you are looking for",
+        body: ["<strong>Surprises.</strong> A file you do not remember touching is the most useful thing a diff ever tells you.",
+               "<strong>Junk.</strong> <code>build/</code>, <code>.o</code> files and editor settings should never appear &mdash; that is what <code>.gitignore</code> is for.",
+               "<strong>Leftovers.</strong> Debug prints, commented-out experiments.",
+               "This habit is why code review is survivable later."] }),
+
+    f({ todo: "Ritual step 6 &mdash; merge, then delete the branch",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(7, 7), pushed: true }],
+        pr: { state: "merged", title: "Convert the converter to functions", files: 2, adds: 14, dels: 3 },
+        term: [["cmd", "# Merge pull request  ->  Confirm merge"],
+               ["ok", "  Pull request #1 merged"],
+               ["dim", "  Delete branch"]],
+        title: "Merge puts the work on main",
+        body: ["<code>main</code> on GitHub now contains your commits.",
+               "The PR closes and stays as a <strong>permanent record</strong> of the change.",
+               "<strong>Delete the branch</strong> &mdash; its work is in <code>main</code> now. The PR keeps the history."] }),
+
+    f({ todo: "Ritual step 6 &mdash; merge, then delete the branch",
+        local:  [{ name: "main", kind: "main", commits: C(7, 7), head: true }],
+        remote: [{ name: "main", kind: "main", commits: C(7), pushed: true }],
+        pr: { state: "merged", title: "Convert the converter to functions", files: 2, adds: 14, dels: 3 },
+        term: [["cmd", "$ git switch main"],
+               ["cmd", "$ git pull"],
+               ["ok", "   d4e5f6g..9f0a1b2  main -> main"]],
+        title: "Last step everyone forgets",
+        body: ["The merge happened <strong>on GitHub</strong>, not on your computer.",
+               "Switch back to <code>main</code> and <code>pull</code>, or your next branch starts from stale code.",
+               "<strong>Now</strong> the two copies match again."],
+        more: ["<strong>Why bother, when it is your own repo and you merge it yourself?</strong> Because the diff is the product. You get a readable record of every change, you catch your own mistakes before they are buried in <code>main</code>, and in CS 2420 the PR <em>is</em> how you submit every assignment. Here you learn the shape while the stakes are low.",
+               "<strong>The number at the top is the point in Holdfast.</strong> &ldquo;2 changed files&rdquo; <em>is</em> your touch count &mdash; the thing the game asks you to record every week. In Week 4 adding a tower touches eight files. By Week 13 it touches one. That falling number is the whole argument for OOP, and the PR counts it for you."],
+        action: { do: "Do this once now, on your CT2 repo: branch, commit, push, open the PR, read the diff, merge.",
+                  whereto: "ct2-functions-references   -->   branch: ct2-work",
+                  note: "From Holdfast Week 3 on, the same six steps start every week." } })
+  ]
+},
+
+// ===========================================================================
+oops: {
+  label: "When it goes wrong",
+  frames: [
+    f({ todo: "Recovery &mdash; committed on main by mistake",
+        local:  [{ name: "main", kind: "main", commits: C(6, 6), head: true, bad: true },
+                 { name: "ct2-work", kind: "branch", commits: C(4), from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true }],
+        term: [["err", "# you forgot to switch, and committed on main"],
+               ["cmd", "$ git log --oneline -1"],
+               ["", "7a8b9c0 (HEAD -> main) convert to functions"]],
+        title: "&ldquo;I committed on main by accident&rdquo;",
+        body: ["Extremely common. Nothing is lost.",
+               "You have not pushed, so <strong>only your computer knows</strong>.",
+               "The fix is to point the branch at this work, then rewind <code>main</code>."] }),
+
+    f({ todo: "Recovery &mdash; committed on main by mistake",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(6, 6), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true }],
+        term: [["cmd", "$ git switch -c ct2-work        # branch keeps the commits"],
+               ["cmd", "$ git switch main"],
+               ["cmd", "$ git reset --hard origin/main  # main back to GitHub's copy"],
+               ["ok", "HEAD is now at d4e5f6g add the tax line"]],
+        title: "The fix, in three commands",
+        body: ["Branch <strong>from where you are</strong> &mdash; the new branch keeps your commits.",
+               "Then put <code>main</code> back to what GitHub has.",
+               "<strong>Only safe because you had not pushed.</strong> If you had, ask rather than guess.",
+               "<code>--hard</code> throws away uncommitted edits. Check <code>git status</code> first."] }),
+
+    f({ todo: "Recovery &mdash; the PR shows far too much",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
+                 { name: "ct2-work", kind: "branch", commits: C(6), pushed: true, from: 4 }],
+        pr: { state: "open", title: "Week 3", files: 47, adds: 8211, dels: 0, bad: true },
+        term: [["err", "47 changed files with 8,211 additions"],
+               ["dim", "  build/CMakeFiles/...  build/run_tests  build/_deps/..."]],
+        title: "&ldquo;My PR says 47 changed files&rdquo;",
+        body: ["You committed the <strong><code>build/</code> folder</strong>. Everyone does this once.",
+               "Those are generated files &mdash; they are rebuilt from your source every time.",
+               "Your repo already has a <code>.gitignore</code> that excludes them.",
+               "It only happens if something was committed <em>before</em> the ignore rule applied."] }),
+
+    f({ todo: "Recovery &mdash; the PR shows far too much",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(7, 7), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
+                 { name: "ct2-work", kind: "branch", commits: C(7, 7), pushed: true, from: 4 }],
+        pr: { state: "open", title: "Week 3", files: 2, adds: 14, dels: 3 },
+        term: [["cmd", "$ git rm -r --cached build"],
+               ["cmd", "$ git commit -m &quot;stop tracking build output&quot;"],
+               ["cmd", "$ git push"],
+               ["ok", "2 changed files with 14 additions and 3 deletions"]],
+        title: "Untrack it and the PR updates itself",
+        body: ["<code>--cached</code> removes it from git but <strong>leaves the folder on disk</strong>.",
+               "Push, and the open PR redraws &mdash; no need to close and reopen it.",
+               "<strong>A PR tracks the branch.</strong> Every push to that branch updates it."],
+        action: { do: "Nothing to fix yet &mdash; come back here when something looks wrong. Now go do the real one on your CT2 repo.",
+                  whereto: "ct2-functions-references   -->   branch: ct2-work",
+                  note: "If you get stuck, the diff almost always tells you what happened." } })
+  ]
+}
+};
+
+// ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+var state = { mode: "line", i: 0, timer: null };
+
+function el(tag, cls, html) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html !== undefined) n.innerHTML = html;
+  return n;
+}
+function frames() { return MODES[state.mode].frames; }
+
+function asList(body) {
+  if (!Array.isArray(body)) return el("p", null, body);
+  var ul = el("ul", "blist");
+  body.forEach(function (b) { ul.appendChild(el("li", null, b)); });
+  return ul;
+}
+
+function drawLanes(where, lanes, box, other) {
+  box.appendChild(el("div", "where", where));
+  if (!lanes || !lanes.length) {
+    box.appendChild(el("div", "lane", '<span class="none">nothing here yet</span>'));
+    return;
+  }
+  var isLocal = where.indexOf("COMPUTER") >= 0;
+  lanes.forEach(function (ln) {
+    var row = el("div", "lane");
+    row.appendChild(el("span", "nm " + ln.kind, ln.name));
+    if (!ln.commits.length) {
+      row.appendChild(el("span", "none", "no commits"));
+    } else {
+      ln.commits.forEach(function (c, i) {
+        if (i) row.appendChild(el("span", "conn", "&mdash;"));
+        var cls = "dot " + (ln.kind === "main" ? "on-main" : "on-branch") + (c.fresh ? " fresh" : "");
+        row.appendChild(el("span", cls, String(c.id)));
+      });
+    }
+    if (ln.head) row.appendChild(el("span", "head", "HEAD"));
+    if (ln.dirty) row.appendChild(el("span", "notpushed", "unsaved edits"));
+
+    // The badge compares the two copies rather than guessing. An earlier
+    // version marked every local lane "not pushed" because `pushed` only ever
+    // lived on the remote side -- so main looked out of sync when it was not.
+    if (isLocal) {
+      var twin = (other || []).filter(function (o) { return o.name === ln.name; })[0];
+      if (!twin) {
+        row.appendChild(el("span", "notpushed", "not on GitHub yet"));
+      } else if (ln.commits.length > twin.commits.length) {
+        row.appendChild(el("span", "notpushed",
+          (ln.commits.length - twin.commits.length) + " not pushed"));
+      } else if (ln.commits.length < twin.commits.length) {
+        row.appendChild(el("span", "notpushed", "behind GitHub"));
+      } else {
+        row.appendChild(el("span", "pushed", "in sync"));
+      }
+    }
+    box.appendChild(row);
+  });
+}
+
+function render() {
+  renderLegend();
+  var fr = frames()[state.i];
+  var stage = document.getElementById("stage");
+  stage.innerHTML = "";
+
+  if (fr.todo) {
+    var tb = el("div", "todobar");
+    tb.appendChild(el("span", "tag", "THIS STEP IS FOR"));
+    tb.appendChild(el("span", "what", fr.todo));
+    stage.appendChild(tb);
+  }
+
+  var grid = el("div", "stage");
+  var pipe = el("div", "pipe");
+  drawLanes("YOUR COMPUTER", fr.local, pipe, fr.remote);
+  pipe.appendChild(el("hr", "sep"));
+  drawLanes("GITHUB", fr.remote, pipe, fr.local);
+
+  if (fr.pr) {
+    var pc = el("div", "prcard " + fr.pr.state);
+    pc.appendChild(el("div", "t", "Pull request &#35;1 &mdash; " + fr.pr.title +
+      '<span class="state">' + fr.pr.state.toUpperCase() + "</span>"));
+    pc.appendChild(el("div", "meta", fr.pr.files + " changed files with " +
+      fr.pr.adds + " additions and " + fr.pr.dels + " deletions"));
+    pipe.appendChild(pc);
+  }
+
+  if (fr.diff) {
+    var cb = el("div", "codebox");
+    cb.appendChild(el("div", "fn", "Files changed"));
+    var body = el("div", "body");
+    fr.diff.forEach(function (d, i) {
+      var cls = "ln " + (d.t === "add" ? "add" : d.t === "del" ? "del" : "");
+      if (i === fr.diffHl && fr.lineNote) {
+        var row = el("div", cls + " hl");
+        row.appendChild(el("span", "src", d.s));
+        row.appendChild(el("span", "calc", fr.lineNote));
+        body.appendChild(row);
+      } else {
+        body.appendChild(el("div", cls, d.s));
+      }
+    });
+    cb.appendChild(body);
+    pipe.appendChild(cb);
+  }
+  grid.appendChild(pipe);
+
+  var side = el("div", "side");
+  var tw = el("div", "termwrap");
+  tw.appendChild(el("div", "tlabel", "TERMINAL"));
+  var term = el("div", "term");
+  fr.term.forEach(function (p) {
+    var sp = document.createElement("span");
+    if (p[0]) sp.className = p[0];
+    sp.innerHTML = p[1] + "\n";
+    term.appendChild(sp);
+  });
+  tw.appendChild(term);
+  side.appendChild(tw);
+
+  var card = el("div", "card");
+  card.appendChild(el("h3", null, fr.title));
+  card.appendChild(asList(fr.body));
+  side.appendChild(card);
+
+  if (fr.more) {
+    var mc = el("div", "card deeper");
+    mc.appendChild(el("h3", null, "&#8627; Going deeper &mdash; optional"));
+    mc.appendChild(asList(fr.more));
+    side.appendChild(mc);
+  }
+  if (fr.action) {
+    var ac = el("div", "card action");
+    ac.appendChild(el("h3", null, "&#9654; Your turn"));
+    ac.appendChild(el("p", null, fr.action.do));
+    if (fr.action.whereto) ac.appendChild(el("div", "whereto", fr.action.whereto));
+    if (fr.action.note) ac.appendChild(el("p", null, fr.action.note));
+    side.appendChild(ac);
+  }
+  grid.appendChild(side);
+  stage.appendChild(grid);
+
+  document.getElementById("frameCount").textContent =
+    MODES[state.mode].label + "  -  step " + (state.i + 1) + " of " + frames().length;
+  document.getElementById("first").disabled = state.i === 0;
+  document.getElementById("prev").disabled = state.i === 0;
+  document.getElementById("next").disabled = state.i >= frames().length - 1;
+  document.getElementById("last").disabled = state.i >= frames().length - 1;
+}
+
+// Only the markers this tab actually uses.
+function renderLegend() {
+  var node = document.getElementById("legend");
+  node.innerHTML = "";
+  var anyBranch = false, anyFresh = false, anyPR = false;
+  MODES[state.mode].frames.forEach(function (fr) {
+    (fr.local || []).concat(fr.remote || []).forEach(function (ln) {
+      if (ln.kind === "branch") anyBranch = true;
+      ln.commits.forEach(function (c) { if (c.fresh) anyFresh = true; });
+    });
+    if (fr.pr) anyPR = true;
+  });
+  var e = [["border-color:#2980b9;background:#eaf2f8", "a commit on <code>main</code>"]];
+  if (anyBranch) e.push(["border-color:#8e44ad;background:#f5eef8", "a commit on your branch"]);
+  if (anyFresh) e.push(["border-color:#e67e22", "just happened"]);
+  if (anyPR) e.push(["border-color:#27ae60;background:#f0faf0", "the pull request"]);
+  e.forEach(function (x) {
+    var sp = document.createElement("span");
+    sp.innerHTML = '<i style="' + x[0] + '"></i>' + x[1];
+    node.appendChild(sp);
+  });
+}
+
+function go(i) { state.i = Math.max(0, Math.min(frames().length - 1, i)); render(); }
+function stop() { if (state.timer) { clearInterval(state.timer); state.timer = null; }
+                  document.getElementById("play").innerHTML = "&#9654; Play"; }
+function play() {
+  if (state.timer) { stop(); return; }
+  if (state.i >= frames().length - 1) state.i = 0;
+  document.getElementById("play").innerHTML = "&#10073;&#10073; Pause";
+  state.timer = setInterval(function () {
+    if (state.i >= frames().length - 1) { stop(); return; }
+    go(state.i + 1);
+  }, 2100);
+}
+
+document.getElementById("first").addEventListener("click", function () { stop(); go(0); });
+document.getElementById("prev").addEventListener("click", function () { stop(); go(state.i - 1); });
+document.getElementById("next").addEventListener("click", function () { stop(); go(state.i + 1); });
+document.getElementById("last").addEventListener("click", function () { stop(); go(frames().length - 1); });
+document.getElementById("play").addEventListener("click", play);
+
+Array.prototype.forEach.call(document.querySelectorAll("#tabs [data-mode]"), function (b) {
+  b.addEventListener("click", function () {
+    stop();
+    state.mode = b.getAttribute("data-mode");
+    state.i = 0;
+    Array.prototype.forEach.call(document.querySelectorAll("#tabs [data-mode]"), function (o) {
+      o.setAttribute("aria-selected", String(o === b));
+    });
+    render();
+  });
+});
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "ArrowRight") { stop(); go(state.i + 1); e.preventDefault(); }
+  else if (e.key === "ArrowLeft") { stop(); go(state.i - 1); e.preventDefault(); }
+  else if (e.key === " ") { play(); e.preventDefault(); }
+});
+
+// ---------------------------------------------------------------------------
+// Self-test. Silent when it passes; loud when it does not.
+// ---------------------------------------------------------------------------
+(function selftest() {
+  var fails = [];
+  function ok(c, m) { if (!c) fails.push(m); }
+
+  Object.keys(MODES).forEach(function (m) {
+    var fs = MODES[m].frames;
+    ok(fs.length > 0, m + ": has frames");
+    fs.forEach(function (fr, i) {
+      var w = m + " step " + (i + 1);
+      ok(!!fr.title, w + ": has a title");
+      ok(Array.isArray(fr.body) && fr.body.length, w + ": body is a bullet list");
+      ok(Array.isArray(fr.term) && fr.term.length, w + ": has terminal output");
+      ok(!!fr.todo, w + ": names the ritual step it belongs to");
+      ok(Array.isArray(fr.local) && Array.isArray(fr.remote), w + ": draws both copies");
+      if (fr.diff) ok(fr.lineNote, w + ": a diff must carry a THIS STEP note");
+      if (fr.lineNote) ok(fr.diff && fr.diffHl < fr.diff.length, w + ": note points at a real diff row");
+    });
+    ok(!!fs[fs.length - 1].action, m + ": last step hands off");
+  });
+
+  // The two claims these tabs rest on.
+  var afterCommit = MODES.line.frames[2];
+  ok(afterCommit.local[0].commits.length > afterCommit.remote[0].commits.length,
+     "tab 1: commit must leave the local copy AHEAD of GitHub");
+  var onBranch = MODES.branch.frames[2];
+  ok(onBranch.local[0].commits.length === 4,
+     "tab 2: committing on a branch must leave main untouched");
+
+  var node = document.getElementById("selftest");
+  if (!fails.length) { node.style.display = "none"; return; }
+  node.style.display = "";
+  node.style.color = "#c0392b";
+  node.style.fontWeight = "700";
+  node.textContent = "Stepper self-test: " + fails.length + " problem(s) -- " + fails.join("; ");
+})();
+
+render();
+</script>
+</body>
+</html>
