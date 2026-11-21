@@ -89,6 +89,23 @@
   .prcard.open .state { background: var(--green); color: #fff; }
   .prcard.merged .state { background: var(--purple); color: #fff; }
 
+  .prcard .prnote { background: #f9e2af; color: #1e1e2e; font-weight: 600; line-height: 1.45;
+                    border-radius: 5px; padding: .3rem .75rem; margin-top: .5rem; font-size: 1.02rem; }
+  .prcard .prnote::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800;
+                            letter-spacing: .06em; color: #4a3600; background: rgba(0,0,0,.10);
+                            border-radius: 3px; padding: .08rem .4rem; margin-right: .55rem; }
+
+  /* ---- a review comment pinned to the diff --------------------------- */
+  .review { border: 1px solid var(--line); border-left: 4px solid var(--orange);
+            border-radius: 0 8px 8px 0; background: #fffaf3; padding: .7rem .9rem; margin-top: .8rem; }
+  .review .who { font-weight: 800; font-size: .95rem; }
+  .review .who .when { font-weight: 400; color: var(--muted); margin-left: .4rem; font-size: .82rem; }
+  .review .on { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .85rem;
+                color: var(--muted); background: #fff; border: 1px solid var(--line);
+                border-radius: 5px; padding: .15rem .5rem; display: inline-block; margin: .35rem 0 .1rem; }
+  .review .what { font-size: 1.05rem; line-height: 1.5; margin: .35rem 0 0; }
+  .review .reply { margin: .55rem 0 0; font-size: .97rem; color: #1c7e45; font-weight: 700; }
+
   /* ---- the diff ------------------------------------------------------- */
   .codebox { --code-bg:#1e1e2e; --code-fg:#cdd6f4; --code-hit:#45475a;
              border-radius: 8px; overflow: hidden; background: var(--code-bg); margin-top: .8rem; }
@@ -189,6 +206,8 @@
 //   term           : [[class, text], ...]
 //   title / body   : the explanation card (body is a bullet array)
 //   lineNote       : THIS STEP, inline on the highlighted diff row
+//   prNote         : THIS STEP, inside the pull-request card
+//   review         : optional {who, when, on, what, reply} -- a person's comment
 //   more           : optional "going deeper" bullets
 //   action         : the hand-off on a tab's last step
 // ---------------------------------------------------------------------------
@@ -229,13 +248,16 @@ line: {
     f({ todo: "Before you branch &mdash; know what you already have",
         local:  [{ name: "main", kind: "main", commits: C(4, 4), head: true }],
         remote: [{ name: "main", kind: "main", commits: C(3), pushed: true }],
-        term: [["cmd", "$ git commit -am &quot;add the tax line&quot;"],
+        term: [["cmd", "$ git add ."],
+               ["cmd", "$ git commit -m &quot;add the tax line&quot;"],
                ["ok", "[main d4e5f6g] add the tax line"],
                ["dim", " 1 file changed, 6 insertions(+)"]],
         title: "Commit adds a dot &mdash; on your computer only",
-        body: ["A fourth commit now exists <strong>locally</strong>.",
+        body: ["Two commands: <code>add</code> <strong>chooses what goes in</strong>, <code>commit</code> <strong>saves it</strong>.",
+               "A fourth commit now exists <strong>locally</strong>.",
                "GitHub still shows three. It has not been told.",
-               "<strong>Commit saves. Push shares.</strong> They are two different things."] }),
+               "<strong>Commit saves. Push shares.</strong> They are two different things."],
+        more: ["<strong>You will see <code>git commit -am</code> in tutorials.</strong> It rolls the two commands into one &mdash; but <code>-a</code> only picks up files git is <em>already</em> tracking, so <strong>a file you just created is silently left out</strong>. The symptom is horrible: the new file never reaches the branch and never shows up in the pull request, and nothing warns you. <code>git add .</code> takes everything, new files included. Use the two commands."] }),
 
     f({ todo: "Before you branch &mdash; know what you already have",
         local:  [{ name: "main", kind: "main", commits: C(4), head: true }],
@@ -256,7 +278,7 @@ line: {
 branch: {
   label: "Branching",
   frames: [
-    f({ todo: "Ritual step 1 &mdash; <code>git switch -c ct2-work</code>",
+    f({ todo: "Step 1 of 6 &mdash; <code>git switch -c ct2-work</code>",
         local:  [{ name: "main", kind: "main", commits: C(4), head: true }],
         remote: [{ name: "main", kind: "main", commits: C(4), pushed: true }],
         term: [["dim", "# main is working code. You are about to change things."]],
@@ -265,7 +287,7 @@ branch: {
                "Half-finished work sitting on it means there is no known-good copy.",
                "A <strong>branch</strong> is a second line you can break safely."] }),
 
-    f({ todo: "Ritual step 1 &mdash; <code>git switch -c ct2-work</code>",
+    f({ todo: "Step 1 of 6 &mdash; <code>git switch -c ct2-work</code>",
         local:  [{ name: "main", kind: "main", commits: C(4) },
                  { name: "ct2-work", kind: "branch", commits: C(4), head: true, from: 4 }],
         remote: [{ name: "main", kind: "main", commits: C(4), pushed: true }],
@@ -277,18 +299,19 @@ branch: {
                "No files changed. <code>HEAD</code> just moved to the new name.",
                "GitHub does not know about it yet."] }),
 
-    f({ todo: "Ritual step 2 &mdash; do the work, commit as you go",
+    f({ todo: "Step 2 of 6 &mdash; do the work, commit as you go",
         local:  [{ name: "main", kind: "main", commits: C(4) },
                  { name: "ct2-work", kind: "branch", commits: C(6, 6), head: true, from: 4 }],
         remote: [{ name: "main", kind: "main", commits: C(4), pushed: true }],
-        term: [["cmd", "$ git commit -am &quot;convert to functions&quot;"],
+        term: [["cmd", "$ git add ."],
+               ["cmd", "$ git commit -m &quot;convert to functions&quot;"],
                ["ok", "[ct2-work 7a8b9c0] convert to functions"]],
         title: "Commits land on the branch, not on main",
         body: ["Two commits added &mdash; <strong>to <code>ct2-work</code></strong>.",
                "<code>main</code> is still sitting at four and still works.",
                "<strong>That is the whole point of a branch.</strong>"] }),
 
-    f({ todo: "Ritual step 3 &mdash; <code>git push -u origin ct2-work</code>",
+    f({ todo: "Step 3 of 6 &mdash; <code>git push -u origin ct2-work</code>",
         local:  [{ name: "main", kind: "main", commits: C(4) },
                  { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
         remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
@@ -300,7 +323,8 @@ branch: {
         body: ["<code>-u</code> links your branch to GitHub's copy, so later pushes are just <code>git push</code>.",
                "GitHub now has <strong>both</strong> branches.",
                "Still nothing merged. <code>main</code> is untouched on both sides."],
-        more: ["<strong>Why <code>switch</code> and not <code>checkout</code>?</strong> <code>git checkout</code> does about six unrelated jobs, which is why it confuses everyone. <code>git switch</code> was added to do exactly one of them. Older tutorials will show you <code>checkout -b</code>; it means the same thing here."],
+        more: ["<strong>In this course the branch names are fixed</strong> &mdash; <code>ct2-work</code> here, then <code>week-03</code>, <code>week-04</code> and so on in Holdfast &mdash; so everyone in the room is typing the same thing. <strong>Real teams name a branch after the work</strong>, not the week: <code>fix-negative-temperatures</code>, <code>add-sniper-tower</code>. The command is identical either way.",
+               "<strong>Why <code>switch</code> and not <code>checkout</code>?</strong> <code>git checkout</code> does about six unrelated jobs, which is why it confuses everyone. <code>git switch</code> was added to do exactly one of them. Older tutorials will show you <code>checkout -b</code>; it means the same thing here."],
         action: { do: "You have a branch on GitHub with work on it. Tab 3 is what you do with it &mdash; <strong>the pull request</strong>.",
                   whereto: "next: 3 &middot; The pull request",
                   note: "This is the tab that matters. Take it slowly." } })
@@ -311,7 +335,7 @@ branch: {
 pr: {
   label: "The pull request",
   frames: [
-    f({ todo: "Ritual step 4 &mdash; open the PR on GitHub",
+    f({ todo: "Step 4 of 6 &mdash; open the PR on GitHub",
         local:  [{ name: "main", kind: "main", commits: C(4) },
                  { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
         remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
@@ -323,7 +347,7 @@ pr: {
                "You can also go to the <strong>Pull requests</strong> tab and press <strong>New</strong>.",
                "Nothing has happened yet &mdash; this just opens a form."] }),
 
-    f({ todo: "Ritual step 4 &mdash; open the PR on GitHub",
+    f({ todo: "Step 4 of 6 &mdash; open the PR on GitHub",
         local:  [{ name: "main", kind: "main", commits: C(4) },
                  { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
         remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
@@ -337,7 +361,7 @@ pr: {
                "It is a page that stays put &mdash; you can keep pushing to the branch and it updates.",
                "Two names to know: <strong>base</strong> is where it is going, <strong>compare</strong> is where it came from."] }),
 
-    f({ todo: "Ritual step 5 &mdash; read your own diff",
+    f({ todo: "Step 5 of 6 &mdash; read your own diff",
         local:  [{ name: "main", kind: "main", commits: C(4) },
                  { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
         remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
@@ -359,7 +383,7 @@ pr: {
                "This is the view your instructor sees, and later your teammates.",
                "<strong>Read it before anyone else does.</strong>"] }),
 
-    f({ todo: "Ritual step 5 &mdash; read your own diff",
+    f({ todo: "Step 5 of 6 &mdash; read your own diff",
         local:  [{ name: "main", kind: "main", commits: C(4) },
                  { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
         remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
@@ -376,11 +400,54 @@ pr: {
                "<strong>Leftovers.</strong> Debug prints, commented-out experiments.",
                "This habit is why code review is survivable later."] }),
 
-    f({ todo: "Ritual step 6 &mdash; merge, then delete the branch",
+    f({ todo: "Preview &mdash; Week 10: somebody else reads it",
         local:  [{ name: "main", kind: "main", commits: C(4) },
                  { name: "ct2-work", kind: "branch", commits: C(6), head: true, from: 4 }],
-        remote: [{ name: "main", kind: "main", commits: C(7, 7), pushed: true }],
-        pr: { state: "merged", title: "Convert the converter to functions", files: 2, adds: 14, dels: 3 },
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
+                 { name: "ct2-work", kind: "branch", commits: C(6), pushed: true, from: 4 }],
+        pr: { state: "open", title: "Convert the converter to functions", files: 2, adds: 14, dels: 3 },
+        diff: [{ t: "ctx", s: "  int main()" },
+               { t: "ctx", s: "  {" },
+               { t: "del", s: "-     double f = c * 9.0 / 5.0 + 32;" },
+               { t: "add", s: "+     double f = toFahrenheit(c);" },
+               { t: "ctx", s: "      std::cout << f;" },
+               { t: "ctx", s: "  }" }],
+        diffHl: 3,
+        lineNote: "The comment below is pinned to <strong>this line</strong>.",
+        review: { who: "Your instructor", when: "commented on pull request &#35;1",
+                  on: "src/main.cpp", what: "Nice &mdash; that reads much better. <code>line 61</code> still has the old formula written out inline, though. Worth routing that one through <code>toFahrenheit</code> too?" },
+        term: [["dim", "# a notification arrives: new comment on pull request #1"]],
+        title: "This is the &ldquo;conversation attached&rdquo; part",
+        body: ["A comment can be pinned to <strong>one line</strong> of the diff &mdash; a question about a change, in the place the change lives.",
+               "Look at what it caught: <strong>a line you did not change</strong>. Every test still passes. No scorecard could have told you this.",
+               "That is the whole reason a human reads a diff.",
+               "<strong>This is Week 10.</strong> Between now and then, the only person reading your diff is you."] }),
+
+    f({ todo: "Preview &mdash; Week 10: somebody else reads it",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(7, 7), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(4), pushed: true },
+                 { name: "ct2-work", kind: "branch", commits: C(7, 7), pushed: true, from: 4 }],
+        pr: { state: "open", title: "Convert the converter to functions", files: 2, adds: 16, dels: 4 },
+        prNote: "14 additions just became <strong>16</strong>. This header is a <strong>live count</strong>, not a snapshot taken when you opened it.",
+        review: { who: "Your instructor", when: "commented on pull request &#35;1",
+                  on: "src/main.cpp", what: "Nice &mdash; that reads much better. <code>line 61</code> still has the old formula written out inline, though. Worth routing that one through <code>toFahrenheit</code> too?",
+                  reply: "You pushed the fix. The thread stays as the record of why that second change exists." },
+        term: [["cmd", "$ git add ."],
+               ["cmd", "$ git commit -m &quot;route line 61 through toFahrenheit too&quot;"],
+               ["cmd", "$ git push"],
+               ["ok", "   7a8b9c0..8b9c0d1  ct2-work -> ct2-work"]],
+        title: "Push the fix to the same branch",
+        body: ["<strong>Do not open a second pull request.</strong> Push to the branch this one is already watching.",
+               "The diff, the file count and the header <strong>all redraw themselves</strong>. No button to press.",
+               "<strong>A pull request tracks a branch</strong> &mdash; that is the one sentence to remember.",
+               "<em>Now</em> it gets merged, which is where the six steps pick back up."] }),
+
+    f({ todo: "Step 6 of 6 &mdash; merge, then delete the branch",
+        local:  [{ name: "main", kind: "main", commits: C(4) },
+                 { name: "ct2-work", kind: "branch", commits: C(7), head: true, from: 4 }],
+        remote: [{ name: "main", kind: "main", commits: C(8, 8), pushed: true }],
+        pr: { state: "merged", title: "Convert the converter to functions", files: 2, adds: 16, dels: 4 },
         term: [["cmd", "# Merge pull request  ->  Confirm merge"],
                ["ok", "  Pull request #1 merged"],
                ["dim", "  Delete branch"]],
@@ -389,10 +456,10 @@ pr: {
                "The PR closes and stays as a <strong>permanent record</strong> of the change.",
                "<strong>Delete the branch</strong> &mdash; its work is in <code>main</code> now. The PR keeps the history."] }),
 
-    f({ todo: "Ritual step 6 &mdash; merge, then delete the branch",
-        local:  [{ name: "main", kind: "main", commits: C(7, 7), head: true }],
-        remote: [{ name: "main", kind: "main", commits: C(7), pushed: true }],
-        pr: { state: "merged", title: "Convert the converter to functions", files: 2, adds: 14, dels: 3 },
+    f({ todo: "Step 6 of 6 &mdash; merge, then delete the branch",
+        local:  [{ name: "main", kind: "main", commits: C(8, 8), head: true }],
+        remote: [{ name: "main", kind: "main", commits: C(8), pushed: true }],
+        pr: { state: "merged", title: "Convert the converter to functions", files: 2, adds: 16, dels: 4 },
         term: [["cmd", "$ git switch main"],
                ["cmd", "$ git pull"],
                ["ok", "   d4e5f6g..9f0a1b2  main -> main"]],
@@ -428,15 +495,15 @@ oops: {
         local:  [{ name: "main", kind: "main", commits: C(4) },
                  { name: "ct2-work", kind: "branch", commits: C(6, 6), head: true, from: 4 }],
         remote: [{ name: "main", kind: "main", commits: C(4), pushed: true }],
-        term: [["cmd", "$ git switch -c ct2-work        # branch keeps the commits"],
-               ["cmd", "$ git switch main"],
-               ["cmd", "$ git reset --hard origin/main  # main back to GitHub's copy"],
-               ["ok", "HEAD is now at d4e5f6g add the tax line"]],
-        title: "The fix, in three commands",
-        body: ["Branch <strong>from where you are</strong> &mdash; the new branch keeps your commits.",
-               "Then put <code>main</code> back to what GitHub has.",
+        term: [["cmd", "$ git switch -c ct2-work          # the branch keeps the commits"],
+               ["ok", "Switched to a new branch 'ct2-work'"],
+               ["cmd", "$ git branch -f main origin/main  # move main's label back"],
+               ["dim", "# still on ct2-work. Nothing on disk changed."]],
+        title: "The fix, in two commands",
+        body: ["Branch <strong>from where you are</strong> &mdash; the new branch keeps the commits you just made.",
+               "<code>branch -f</code> moves <code>main</code>&rsquo;s label back to GitHub&rsquo;s copy <strong>without checking it out</strong>, so not one file on your computer is touched.",
                "<strong>Only safe because you had not pushed.</strong> If you had, ask rather than guess.",
-               "<code>--hard</code> throws away uncommitted edits. Check <code>git status</code> first."] }),
+               "Tutorials reach for <code>reset &minus;&minus;hard</code> here. It can delete work you have not committed yet; this cannot."] }),
 
     f({ todo: "Recovery &mdash; the PR shows far too much",
         local:  [{ name: "main", kind: "main", commits: C(4) },
@@ -560,6 +627,7 @@ function render() {
       '<span class="state">' + fr.pr.state.toUpperCase() + "</span>"));
     pc.appendChild(el("div", "meta", fr.pr.files + " changed files with " +
       fr.pr.adds + " additions and " + fr.pr.dels + " deletions"));
+    if (fr.prNote) pc.appendChild(el("div", "prnote", fr.prNote));
     pipe.appendChild(pc);
   }
 
@@ -580,6 +648,19 @@ function render() {
     });
     cb.appendChild(body);
     pipe.appendChild(cb);
+  }
+
+  // A review comment is drawn as its own card under the diff rather than as a
+  // lineNote: lineNote means "the stepper is pointing at this", and a comment
+  // from a person has to read as somebody else's voice, not the narrator's.
+  if (fr.review) {
+    var rv = el("div", "review");
+    rv.appendChild(el("div", "who", fr.review.who +
+      '<span class="when">' + fr.review.when + "</span>"));
+    if (fr.review.on) rv.appendChild(el("div", "on", fr.review.on));
+    rv.appendChild(el("p", "what", fr.review.what));
+    if (fr.review.reply) rv.appendChild(el("p", "reply", fr.review.reply));
+    pipe.appendChild(rv);
   }
   grid.appendChild(pipe);
 
@@ -705,6 +786,8 @@ document.addEventListener("keydown", function (e) {
       ok(Array.isArray(fr.local) && Array.isArray(fr.remote), w + ": draws both copies");
       if (fr.diff) ok(fr.lineNote, w + ": a diff must carry a THIS STEP note");
       if (fr.lineNote) ok(fr.diff && fr.diffHl < fr.diff.length, w + ": note points at a real diff row");
+      if (fr.prNote) ok(!!fr.pr, w + ": a PR note needs a PR card to sit in");
+      if (fr.review) ok(!!fr.pr, w + ": a review comment needs a PR card");
     });
     ok(!!fs[fs.length - 1].action, m + ": last step hands off");
   });
@@ -716,6 +799,18 @@ document.addEventListener("keydown", function (e) {
   var onBranch = MODES.branch.frames[2];
   ok(onBranch.local[0].commits.length === 4,
      "tab 2: committing on a branch must leave main untouched");
+
+  // The Week 10 preview earns its place only if the header count actually moves.
+  var preview = MODES.pr.frames.filter(function (fr) { return !!fr.review; });
+  ok(preview.length === 2, "tab 3: two Week 10 preview frames");
+  ok(preview[1].pr.adds > preview[0].pr.adds,
+     "tab 3: pushing the fix must move the PR header count");
+  ok(preview[1].local[1].commits.length > preview[0].local[1].commits.length,
+     "tab 3: the fix must be a real commit on the branch");
+
+  // Recovery advice is copied verbatim by someone already panicking.
+  var oopsCmds = JSON.stringify(MODES.oops.frames.map(function (fr) { return fr.term; }));
+  ok(oopsCmds.indexOf("reset --hard") < 0, "tab 4: must not prescribe reset --hard");
 
   var node = document.getElementById("selftest");
   if (!fails.length) { node.style.display = "none"; return; }
