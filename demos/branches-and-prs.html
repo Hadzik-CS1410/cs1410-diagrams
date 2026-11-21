@@ -48,7 +48,18 @@
 
   .stage { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr);
            gap: 20px; align-items: start; }
-  @media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
+  .stage > .pipe  { grid-column: 1; }
+  .stage > .aside { grid-column: 1; }
+  /* spans both rows, so row 1 is only as tall as the picture and the optional
+     card sits directly under it instead of below the whole right-hand stack */
+  .stage > .side  { grid-column: 2; grid-row: 1 / span 2; }
+  @media (max-width: 820px) {
+    /* one column: the optional card goes last, after the explanation */
+    .stage { grid-template-columns: 1fr; }
+    .stage > .pipe  { grid-column: 1; order: 1; }
+    .stage > .side  { grid-column: 1; grid-row: auto; order: 2; }
+    .stage > .aside { grid-column: 1; order: 3; }
+  }
 
   .pipe { border: 1px solid var(--line); border-radius: 9px; padding: 14px; background: #fff; }
 
@@ -694,12 +705,6 @@ function render() {
   card.appendChild(asList(fr.body));
   side.appendChild(card);
 
-  if (fr.more) {
-    var mc = el("div", "card deeper");
-    mc.appendChild(el("h3", null, "&#8627; Going deeper &mdash; optional"));
-    mc.appendChild(asList(fr.more));
-    side.appendChild(mc);
-  }
   if (fr.action) {
     var ac = el("div", "card action");
     ac.appendChild(el("h3", null, "&#9654; Your turn"));
@@ -709,6 +714,17 @@ function render() {
     side.appendChild(ac);
   }
   grid.appendChild(side);
+
+  // Under the picture, not on top of the explanation: the left column is empty
+  // on most frames, and this is the one card a reader can skip.
+  if (fr.more) {
+    var aside = el("div", "aside");
+    var mc = el("div", "card deeper");
+    mc.appendChild(el("h3", null, "&#8627; Going deeper &mdash; optional"));
+    mc.appendChild(asList(fr.more));
+    aside.appendChild(mc);
+    grid.appendChild(aside);
+  }
   stage.appendChild(grid);
 
   document.getElementById("frameCount").textContent =
