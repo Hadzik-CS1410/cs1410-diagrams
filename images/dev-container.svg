@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 440" width="880" height="440" role="img" aria-label="Your laptop holds VS Code, Docker Desktop and the project folder. The container holds g++ 13, CMake, gdb and Google Test. The project folder is shared across the boundary, so you edit on your side and the compiler runs on the other.">
+  <title>Your machine and the dev container</title>
+
+  <rect x="0" y="0" width="880" height="440" fill="#ffffff"/>
+
+  <text x="440" y="30" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#1a1a2e" text-anchor="middle">You edit on one side. The compiler runs on the other.</text>
+
+  <!-- ============ your machine ============ -->
+  <rect x="24" y="56" width="372" height="330" rx="12" fill="#f4f6f9" stroke="#8c99ad" stroke-width="2"/>
+  <text x="44" y="84" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1a1a2e">Your laptop</text>
+  <text x="44" y="104" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" fill="#56657d">Windows, macOS or Linux</text>
+
+  <rect x="44" y="120" width="332" height="46" rx="8" fill="#ffffff" stroke="#8c99ad" stroke-width="1.5"/>
+  <text x="60" y="142" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#1a1a2e">VS Code</text>
+  <text x="60" y="158" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#56657d">where you type</text>
+
+  <rect x="44" y="176" width="332" height="46" rx="8" fill="#ffffff" stroke="#8c99ad" stroke-width="1.5"/>
+  <text x="60" y="198" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#1a1a2e">Docker Desktop</text>
+  <text x="60" y="214" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#56657d">runs the container &#x2014; must be started</text>
+
+  <rect x="44" y="232" width="332" height="46" rx="8" fill="#ffffff" stroke="#8c99ad" stroke-width="1.5"/>
+  <text x="60" y="254" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#1a1a2e">Git</text>
+  <text x="60" y="270" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#56657d">commits and pushes your work</text>
+
+  <rect x="44" y="296" width="332" height="40" rx="8" fill="#fdf3e3" stroke="#8f6a00" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="60" y="321" font-family="Consolas, Menlo, monospace" font-size="13" fill="#6a4e00">holdfast/ &#x2014; your project folder</text>
+
+  <text x="44" y="362" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" fill="#8a1c1c">No C++ compiler here. You never install one.</text>
+
+  <!-- ============ the container ============ -->
+  <rect x="484" y="56" width="372" height="330" rx="12" fill="#eef5f1" stroke="#0a7040" stroke-width="2"/>
+  <text x="504" y="84" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#0a7040">The dev container</text>
+  <text x="504" y="104" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" fill="#3d6b55">Ubuntu 24.04 &#x2014; identical for everyone</text>
+
+  <rect x="504" y="120" width="332" height="46" rx="8" fill="#ffffff" stroke="#0a7040" stroke-width="1.5"/>
+  <text x="520" y="142" font-family="Consolas, Menlo, monospace" font-size="13" font-weight="600" fill="#1a1a2e">g++ 13</text>
+  <text x="520" y="158" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#3d6b55">the compiler, pinned to C++20</text>
+
+  <rect x="504" y="176" width="332" height="46" rx="8" fill="#ffffff" stroke="#0a7040" stroke-width="1.5"/>
+  <text x="520" y="198" font-family="Consolas, Menlo, monospace" font-size="13" font-weight="600" fill="#1a1a2e">cmake</text>
+  <text x="520" y="214" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#3d6b55">decides what gets built, and how</text>
+
+  <rect x="504" y="232" width="332" height="46" rx="8" fill="#ffffff" stroke="#0a7040" stroke-width="1.5"/>
+  <text x="520" y="254" font-family="Consolas, Menlo, monospace" font-size="13" font-weight="600" fill="#1a1a2e">gdb &#x2014; Google Test</text>
+  <text x="520" y="270" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#3d6b55">the debugger, and what the scorecard runs</text>
+
+  <rect x="504" y="296" width="332" height="40" rx="8" fill="#fdf3e3" stroke="#8f6a00" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="520" y="321" font-family="Consolas, Menlo, monospace" font-size="13" fill="#6a4e00">/workspaces/holdfast/ &#x2014; the same folder</text>
+
+  <text x="504" y="362" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" fill="#0a7040">Everything the course needs, already installed.</text>
+
+  <!-- ============ the shared folder ============ -->
+  <line x1="376" y1="316" x2="504" y2="316" stroke="#8f6a00" stroke-width="2.5" stroke-dasharray="6 4"/>
+  <polygon points="504,316 494,311 494,321" fill="#8f6a00"/>
+  <polygon points="376,316 386,311 386,321" fill="#8f6a00"/>
+  <text x="440" y="306" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#6a4e00" text-anchor="middle">one folder,</text>
+  <text x="440" y="340" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#6a4e00" text-anchor="middle">two names</text>
+
+  <!-- the boundary -->
+  <line x1="440" y1="56" x2="440" y2="290" stroke="#b9c2d0" stroke-width="2" stroke-dasharray="4 5"/>
+  <line x1="440" y1="346" x2="440" y2="386" stroke="#b9c2d0" stroke-width="2" stroke-dasharray="4 5"/>
+
+  <text x="440" y="416" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" fill="#56657d" text-anchor="middle">Save a file in VS Code and the container sees the change instantly &#x2014; it is not a copy.</text>
+</svg>
