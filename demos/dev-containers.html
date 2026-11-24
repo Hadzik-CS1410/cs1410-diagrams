@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 1410 &middot; Dev Containers &mdash; where your code actually runs</title>
+<style>
+/* @stepper:css */
+/* stepper.css -- the canonical look of every CS 1410 stepper.
+ *
+ * Do not edit this inside a stepper. Edit it HERE, then run
+ * `python scripts/build_steppers.py`, which inlines it into every stepper
+ * between its @stepper:css markers. `--check` reports drift. Same contract as
+ * templates/cpp-starter/ and sync_tooling.py, and for the same reason: there
+ * will be two steppers a week for twelve weeks, and twenty-five hand-copied
+ * copies of a 900-line file drift by the sixth one.
+ *
+ * Sizes, colours and spacing are CT0's (hello-cpp), kept deliberately: it is
+ * the one that has been shown on a projector and it reads from the back.
+ */
+
+:root {
+  --ink: #2c3e50; --muted: #5b6b7a; --line: #d7dae0; --bg: #fcfcfd;
+  --blue: #2980b9; --blueBg: #eaf2f8;
+  --purple: #8e44ad; --purpleBg: #f5eef8;
+  --green: #27ae60; --greenBg: #f0faf0;
+  --orange: #e67e22; --orangeBg: #fff3e0;
+  --red: #c0392b; --redBg: #fdecea;
+}
+* { box-sizing: border-box; }
+
+/* Reserve the scrollbar's space, always.
+ *
+ * This is the real cause of the panes shifting. When one step is short and the
+ * next is tall, the page's vertical scrollbar appears -- and the viewport
+ * instantly narrows by ~15px, so every column shifts left. It looks like the
+ * layout is moving; what moved is the window. In CT0 it happens between steps
+ * 3 and 4 of the first tab.
+ *
+ * Reserving the gutter means the scrollbar costs its width whether or not it
+ * is there, so appearing can never move anything. The @supports fallback is
+ * for engines without scrollbar-gutter, where always painting a track does
+ * the same job less elegantly.
+ *
+ * This makes the shift impossible. It does NOT make a too-tall step acceptable
+ * -- see the one-screen rule in templates/stepper/README.md, which
+ * verify_stepper.js enforces. */
+html { scrollbar-gutter: stable; }
+@supports not (scrollbar-gutter: stable) { html { overflow-y: scroll; } }
+
+/* Tight furniture. 342px of the 760px one-screen budget used to be chrome
+   before a single line of content -- padding, heading, tabs, controls,
+   legend. Trimming it buys ~74px for teaching on EVERY step of every
+   stepper, which is a better trade than cutting an explanation. */
+body { margin: 0; padding: 14px 16px 20px;
+       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+       color: var(--ink); background: #fff; }
+/* No max-width. These run the full browser width and read far better for it --
+   code, terminal and explanation side by side instead of stacked. */
+.wrap { margin: 0 auto; }
+h1 { font-size: 1.35rem; margin: 0 0 .35rem; }
+.sub { color: var(--muted); margin: 0 0 .6rem; line-height: 1.5; font-size: .9rem; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        border-bottom: 2px solid var(--line); padding-bottom: 7px; margin-bottom: 10px; }
+.tabs button { font-size: .95rem; font-weight: 600; cursor: pointer; padding: 8px 14px;
+               border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.spacer { flex: 1; }
+.hint { color: var(--muted); font-size: .85rem; }
+.panel { border: 1px solid var(--line); border-radius: 9px; background: var(--bg);
+         padding: 7px 12px; margin-bottom: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lbl { font-weight: 700; font-size: .85rem; color: var(--muted);
+       text-transform: uppercase; letter-spacing: .04em; min-width: 54px; }
+.ctl { font: inherit; cursor: pointer; padding: 6px 12px; border: 1px solid var(--line);
+       border-radius: 6px; background: #fff; color: var(--ink); }
+.ctl:disabled { opacity: .4; cursor: default; }
+.ctl.primary { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
+.count { margin-left: auto; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+
+/* Names the TODO the current step is for, on EVERY step. The hand-off card at
+   the end of a tab says "go write it"; this says "this is the one" the whole
+   way through. */
+.todobar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+           background: #fff8e1; border-left: 5px solid #8f6a00;
+           border-radius: 0 8px 8px 0; padding: .35rem .85rem; margin-bottom: 10px;
+           min-height: 40px; }
+.todobar .tag { background: #8f6a00; color: #fff; border-radius: 4px;
+                padding: .1rem .5rem; font-size: .76rem; letter-spacing: .05em; }
+.todobar .what { font-size: 1rem; }
+.todobar code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .89rem; }
+
+/* ------------------------------------------------------------------ THE SPLIT
+ * Code on the left, terminal and explanation on the right, EVENLY, and the
+ * divide does not move from step to step.
+ *
+ * It used to be `minmax(0,1.2fr) minmax(0,1fr)`, and the panes visibly shifted
+ * left and right as you stepped. Three things cause that, and all three are
+ * fixed here, because fixing only the first leaves the wobble:
+ *
+ *   1. Uneven, content-influenced columns -> both are now minmax(0,1fr),
+ *      which is an exact half each regardless of what is in them.
+ *   2. A long code line widening its own column -> the code body scrolls
+ *      horizontally inside the pane (.codebox .body) instead of growing it.
+ *   3. A pane with nothing in it on some steps collapsing and springing back
+ *      -> both panes carry a min-height, so an empty terminal still holds
+ *      its half of the stage.
+ *
+ * On a projector a layout that jumps every step costs the room its place. */
+.stage { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+         gap: 20px; align-items: start; }
+.stage > * { min-width: 0; }            /* grid children must be allowed to shrink */
+@media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
+
+.pipe { border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: #fff;
+        min-height: 300px; }
+.stageRow { display: flex; align-items: center; gap: 10px; margin: 0 0 7px; flex-wrap: wrap; }
+.stageName { font-size: .78rem; font-weight: 700; letter-spacing: .05em;
+             text-transform: uppercase; color: var(--muted); width: 100%; margin-bottom: 1px;
+             line-height: 1.2; }
+.box { border: 2px solid var(--line); border-radius: 8px; padding: 6px 12px; min-width: 128px;
+       background: #fff; transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease; }
+.box .nm { font-weight: 700; font-size: .95rem; }
+.box .meta { font-size: .76rem; color: var(--muted); margin-top: 1px; line-height: 1.25; }
+.box.pending { border-style: dashed; opacity: .45; }
+.box.src { border-color: var(--blue); background: var(--blueBg); }
+.box.obj { border-color: var(--purple); background: var(--purpleBg); }
+.box.exe { border-color: var(--green); background: var(--greenBg); }
+.box.active { box-shadow: 0 0 0 4px rgba(230,126,34,.25); border-color: var(--orange); }
+.box.bad { border-color: var(--red); background: var(--redBg); }
+.arrow { color: var(--muted); font-size: 1.3rem; line-height: 1; }
+
+.side { display: flex; flex-direction: column; gap: 12px; min-height: 300px; }
+.card { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; background: #fff; }
+.card h3 { margin: 0 0 .45rem; font-size: 1.15rem; }
+.card p { margin: .35rem 0; line-height: 1.5; font-size: 1.05rem; }
+.card .blist { margin: .3rem 0 0; padding-left: 1.15rem; }
+/* The bullets ARE the explanation, so they get read from the back of the room:
+   1.1rem, same as the THIS STEP pill. The heading stays a step above them so it
+   still leads. Prose is not an option here -- see build_steppers.py --check,
+   which fails a card paragraph long enough to be a paragraph. */
+.card .blist li { margin: .38rem 0; line-height: 1.5; font-size: 1.1rem; }
+.card.deeper .blist li { font-size: 1rem; }
+.termwrap { border-radius: 9px; overflow: hidden; }
+.termwrap .tlabel { background: #11151c; color: #7d8795; padding: 5px 12px;
+                    font-family: Consolas, "SF Mono", Menlo, monospace;
+                    font-size: .76rem; font-weight: 700; letter-spacing: .08em; }
+.term { background: #1e2430; color: #e6e9ef; padding: 12px 14px;
+        font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 1.2rem;
+        line-height: 1.55; white-space: pre-wrap; min-height: 104px;
+        overflow-x: auto; }
+.term .cmd { color: #8fd4ff; }
+.term .err { color: #ff9a8f; }
+.term .ok  { color: #9ae6a4; }
+.term .dim { color: #9aa4b2; }
+
+/* Code panel. Catppuccin Mocha, the same look and size as the CS 2420
+   steppers, so a student moving between courses sees one thing. */
+.codebox { --code-bg:#1e1e2e; --code-fg:#cdd6f4; --code-hit:#45475a;
+           border-radius: 8px; overflow: hidden; background: var(--code-bg); }
+.codebox .fn { background: #181825; color: #9399b2; padding: 6px 11px;
+               font-weight: 700; font-size: .78rem;
+               font-family: Consolas, "SF Mono", Menlo, monospace;
+               border-bottom: 1px solid #313244; }
+/* overflow-x here, not on the pane: a long line scrolls inside the code box
+   rather than widening the column and squeezing the terminal. */
+.codebox .body { padding: .6rem 0; overflow-x: auto; color: var(--code-fg);
+                 font-family: Consolas, "Courier New", monospace;
+                 font-size: 1.35rem; line-height: 1.6; }
+.codebox .ln { padding: 0 .8rem; white-space: pre; }
+.codebox .ln.hl { background: var(--code-hit); }
+.codebox .ln.hl::before { content: "\25B8 "; color: #f9e2af; }
+.codebox .ln:not(.hl)::before { content: "  "; }
+/* Catppuccin Mocha token colours */
+.codebox .c-com { color:#6c7086; font-style: italic; }
+.codebox .c-str { color:#a6e3a1; }
+.codebox .c-kw  { color:#cba6f7; }
+.codebox .c-typ { color:#89b4fa; }
+.codebox .c-num { color:#fab387; }
+.codebox .c-pre { color:#f5c2e7; }
+
+/* THIS STEP, inline on the executing row. Keeping it on the same line as the
+   code it describes is the whole point: nothing to look back and forth
+   between. Nothing else in the panel has a light background, which is what
+   makes it unmistakable. */
+.codebox .ln.hl { display: flex; align-items: center; flex-wrap: wrap; }
+.codebox .ln.hl .src { white-space: pre; padding-right: 1.6rem; }
+.codebox .calc { background: #f9e2af; color: #1e1e2e; font-weight: 600;
+                 white-space: pre-wrap; border-radius: 5px;
+                 padding: .1rem .75rem; font-size: 1.1rem; }
+.codebox .calc::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800;
+                         letter-spacing: .06em; color: #4a3600;
+                         background: rgba(0,0,0,.10); border-radius: 3px;
+                         padding: .08rem .4rem; margin-right: .55rem; }
+.codebox .calc code { background: rgba(0,0,0,.09); border-radius: 3px;
+                      padding: .02em .28em; font-size: .95em; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 0;
+          color: var(--muted); font-size: .82rem; }
+.legend i { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line);
+            border-radius: 4px; vertical-align: -2px; margin-right: 5px; }
+table.cmp { border-collapse: collapse; width: 100%; font-size: .9rem; }
+table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.cmp th { background: #f2f4f7; }
+.tag { font-weight: 700; }
+.tag.okT { color: var(--green); } .tag.badT { color: var(--red); }
+.card.deeper { border-left: 4px solid var(--blue); background: #f7fbfe; }
+.card.deeper h3 { color: #1b5e8a; font-size: 1.02rem; }
+.card.deeper p { font-size: .93rem; }
+.card.action { border: 2px solid var(--green); background: var(--greenBg); }
+.card.action h3 { color: #1c7e45; }
+.card.action .where { font-family: Consolas, "SF Mono", Menlo, monospace;
+                      font-size: .86rem; background: #fff; border: 1px solid #bfe3c9;
+                      border-radius: 6px; padding: 6px 9px; display: inline-block;
+                      margin: .3rem 0; }
+.selftest { margin-top: 18px; font-size: .84rem; color: var(--muted); }
+/* /@stepper:css */
+</style>
+<style>
+/* This stepper only: the two sides of the boundary are the whole lesson, so
+   each row is colour-coded and labelled rather than left to the reader. */
+.sideLbl { font-size: .72rem; font-weight: 800; letter-spacing: .06em;
+           text-transform: uppercase; border-radius: 4px; padding: .1rem .5rem;
+           color: #fff; }
+.sideLbl.host { background: #8e44ad; }
+.sideLbl.cont { background: #2980b9; }
+.boundary { border-top: 2px dashed #d7dae0; margin: .55rem 0 .5rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Dev containers &mdash; where your code actually runs</h1>
+  <p class="sub">
+    Two computers, one window. The confusing part of week one is not Docker &mdash; it is
+    not knowing <em>which side of the line</em> you are standing on. Every step below shows
+    both sides at once. <strong>Take the tabs in order.</strong>
+  </p>
+
+  <div class="tabs" id="tabs">
+    <button data-mode="before" aria-selected="true">1 &middot; Before you click anything</button>
+    <button data-mode="open">2 &middot; Reopen in Container</button>
+    <button data-mode="which">3 &middot; Which side am I on?</button>
+    <button data-mode="wrong">4 &middot; When it goes wrong</button>
+    <span class="spacer"></span>
+    <span class="hint">&larr; &rarr; arrow keys step &middot; space plays</span>
+  </div>
+
+  <div class="panel" id="controls">
+    <div class="row">
+      <span class="lbl">Step</span>
+      <button class="ctl" id="first">&laquo; First</button>
+      <button class="ctl" id="prev">&lsaquo; Prev</button>
+      <button class="ctl primary" id="play">&#9654; Play</button>
+      <button class="ctl" id="next">Next &rsaquo;</button>
+      <button class="ctl" id="last">Last &raquo;</button>
+      <span class="count" id="frameCount"></span>
+    </div>
+  </div>
+
+  <div id="stage"></div>
+  <div class="legend" id="legend"></div>
+  <div class="selftest" id="selftest"></div>
+</div>
+
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+// Every frame is a COMPLETE description of both sides at that step, never a
+// diff -- so stepping backwards is just re-rendering and no state can drift.
+//   boxes:  { name: "ok" | "pending" | "bad" }
+//   active: the box the step is about
+//   term:   [[class, text], ...]   what the terminal shows
+//   title / body (bullets) / more / action
+// ---------------------------------------------------------------------------
+
+var ROWS = [
+  { name: "Your laptop", side: "host", kind: "obj",
+    items: ["VS Code", "your folder", "Docker Desktop"] },
+  { name: "Inside the container", side: "cont", kind: "src",
+    items: ["Ubuntu 24.04", "/workspaces", "g++ 13"] }
+];
+
+var TODO_SETUP = "Lab 0 &mdash; get a working toolchain";
+var TODO_WHERE = "Lab 0 &mdash; know which side you are on";
+
+function f(o) { return o; }
+
+var MODES = {
+
+  before: {
+    label: "1 \u00b7 Before you click anything",
+    frames: [
+      f({ todo: TODO_SETUP,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "pending",
+                   "Ubuntu 24.04": "pending", "/workspaces": "pending", "g++ 13": "pending" },
+          active: "your folder",
+          term: [["cmd", "PS C:\\Users\\you\\cs1410> g++ --version"],
+                 ["err", "g++ : The term 'g++' is not recognized..."]],
+          title: "There is no C++ compiler on your laptop",
+          body: ["Your folder and VS Code are real and on your machine",
+                 "Nothing on the bottom row exists yet",
+                 "<code>g++</code> fails because you never installed one &mdash; and you are not going to"] }),
+
+      f({ todo: TODO_SETUP,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "pending", "/workspaces": "pending", "g++ 13": "pending" },
+          active: "Docker Desktop",
+          term: [["cmd", "# Docker Desktop: starting..."],
+                 ["ok", "  Engine running"]],
+          title: "Docker Desktop is the engine, not the container",
+          body: ["It has to be <strong>running</strong> before VS Code can build anything",
+                 "By itself it does nothing to your project",
+                 "Think of it as the power supply the container plugs into"],
+          more: ["If you only remember one troubleshooting step, make it this one",
+                 "Most week-one failures are Docker Desktop simply not started"],
+          action: { do: "Start Docker Desktop and wait for the whale icon to stop animating.",
+                    where: "Windows: Start menu \u2192 Docker Desktop" } })
+    ]
+  },
+
+  open: {
+    label: "2 \u00b7 Reopen in Container",
+    frames: [
+      f({ todo: TODO_SETUP,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "pending", "/workspaces": "pending", "g++ 13": "pending" },
+          active: "VS Code",
+          term: [["cmd", "# VS Code: Reopen in Container"],
+                 ["dim", "  reading .devcontainer/devcontainer.json ..."]],
+          title: "VS Code reads the recipe",
+          body: ["<code>.devcontainer/devcontainer.json</code> ships in the repo",
+                 "It names the image, the compiler and the extensions",
+                 "Everyone in the class gets the same one &mdash; that is the whole point"] }),
+
+      f({ todo: TODO_SETUP,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "ok", "/workspaces": "pending", "g++ 13": "pending" },
+          active: "Ubuntu 24.04",
+          term: [["cmd", "$ docker pull mcr.microsoft.com/devcontainers/cpp:1-ubuntu-24.04"],
+                 ["dim", "  downloading ... this is the slow one"],
+                 ["ok", "  pulled"]],
+          title: "It downloads a whole Linux",
+          body: ["<strong>This is the step that takes minutes the first time</strong>",
+                 "It is downloading, not frozen &mdash; leave it alone",
+                 "It happens <em>once</em>; every later project reuses the same image"] }),
+
+      f({ todo: TODO_SETUP,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "ok", "/workspaces": "ok", "g++ 13": "pending" },
+          active: "/workspaces",
+          term: [["cmd", "$ ls /workspaces/cs1410"],
+                 ["", "CMakeLists.txt  src  tests"]],
+          title: "Your folder appears inside Linux",
+          body: ["Your files are <strong>mounted</strong>, not copied",
+                 "One set of files, visible from both sides at once",
+                 "Edit on either side and the other sees it immediately"],
+          more: ["This is why your work is safe when the container is deleted",
+                 "The files were never in the container &mdash; they were always yours"] }),
+
+      f({ todo: TODO_SETUP,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "ok", "/workspaces": "ok", "g++ 13": "ok" },
+          active: "g++ 13",
+          term: [["cmd", "$ g++ --version"],
+                 ["ok", "g++ (Ubuntu 13.2.0) 13.2.0"]],
+          title: "The compiler is here, and only here",
+          body: ["Same command that failed on your laptop, now works",
+                 "The prompt changed from <code>PS C:\\&gt;</code> to <code>$</code> &mdash; that is how you know",
+                 "Extensions installed too, on the container side, not yours"],
+          action: { do: "Run the environment check. If it prints your compiler and standard, Lab 0 is done.",
+                    where: "python3 tests/scorecard.py" } })
+    ]
+  },
+
+  which: {
+    label: "3 \u00b7 Which side am I on?",
+    frames: [
+      f({ todo: TODO_WHERE,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "ok", "/workspaces": "ok", "g++ 13": "ok" },
+          active: "VS Code",
+          term: [["dim", "bottom-left of the VS Code window:"],
+                 ["ok", "  >< Dev Container: CS 1410"]],
+          title: "The window tells you, bottom left",
+          body: ["Green badge naming a container &rarr; you are inside",
+                 "No badge &rarr; you are on your laptop",
+                 "Check it before you wonder why a command failed"] }),
+
+      f({ todo: TODO_WHERE,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "ok", "/workspaces": "ok", "g++ 13": "ok" },
+          active: "/workspaces",
+          term: [["cmd", "$ pwd"],
+                 ["", "/workspaces/cs1410"],
+                 ["dim", "# a Linux path. On your laptop it would be C:\\Users\\..."]],
+          title: "So does the prompt",
+          body: ["<code>$</code> and a <code>/</code> path &rarr; the container",
+                 "<code>PS C:\\&gt;</code> &rarr; PowerShell, on your laptop",
+                 "Two terminals can be open at once, one of each"] }),
+
+      f({ todo: TODO_WHERE,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "ok", "/workspaces": "ok", "g++ 13": "ok" },
+          active: "g++ 13",
+          term: [["cmd", "$ ls build/"],
+                 ["", "CMakeCache.txt  Makefile  ct0-hello-cpp"]],
+          title: "Built things belong to the container",
+          body: ["<code>build/</code> is produced by the Linux compiler",
+                 "It is in <code>.gitignore</code> on purpose &mdash; never commit it",
+                 "Your <code>src/</code> is yours; <code>build/</code> is disposable"],
+          action: { do: "Open a terminal and run pwd. If it does not start with /workspaces, you are on the wrong side.",
+                    where: "Terminal \u2192 New Terminal" } })
+    ]
+  },
+
+  wrong: {
+    label: "4 \u00b7 When it goes wrong",
+    frames: [
+      f({ todo: TODO_WHERE,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "bad",
+                   "Ubuntu 24.04": "pending", "/workspaces": "pending", "g++ 13": "pending" },
+          active: "Docker Desktop",
+          term: [["err", "Cannot connect to the Docker daemon."],
+                 ["dim", "  Is the docker daemon running?"]],
+          title: "Docker Desktop is not running",
+          body: ["By far the most common one, and it looks alarming",
+                 "Nothing is broken &mdash; the engine is off",
+                 "Start Docker Desktop, wait for it to settle, then reopen"] }),
+
+      f({ todo: TODO_WHERE,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "ok", "/workspaces": "ok", "g++ 13": "bad" },
+          active: "g++ 13",
+          term: [["cmd", "PS C:\\Users\\you\\cs1410> cmake --preset default"],
+                 ["err", "'cmake' is not recognized..."]],
+          title: "The right command, on the wrong side",
+          body: ["This is the container's command typed into PowerShell",
+                 "Nothing is misconfigured &mdash; you are outside",
+                 "Reopen in Container, or use a terminal that shows <code>$</code>"] }),
+
+      f({ todo: TODO_WHERE,
+          boxes: { "VS Code": "ok", "your folder": "ok", "Docker Desktop": "ok",
+                   "Ubuntu 24.04": "bad", "/workspaces": "ok", "g++ 13": "pending" },
+          active: "Ubuntu 24.04",
+          term: [["dim", "# you changed .devcontainer/devcontainer.json"],
+                 ["err", "  the running container is still the old one"]],
+          title: "It worked yesterday",
+          body: ["The container was built from the <em>old</em> recipe",
+                 "Changing the recipe does not change a container already running",
+                 "<strong>Rebuild</strong> it &mdash; your files are mounted, so nothing of yours is lost"],
+          action: { do: "Command Palette, then: Dev Containers: Rebuild Container.",
+                    where: "Ctrl+Shift+P \u2192 Rebuild Container" } })
+    ]
+  }
+};
+
+// --- engine ----------------------------------------------------------------
+
+function el(tag, cls, html) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html !== undefined && html !== null) n.innerHTML = html;
+  return n;
+}
+
+function asList(body) {
+  if (!Array.isArray(body)) return el("p", null, body);
+  var ul = el("ul", "blist");
+  body.forEach(function (b) { ul.appendChild(el("li", null, b)); });
+  return ul;
+}
+
+/* One card per step -- see templates/stepper/README.md. A frame carrying more
+ * than one card becomes consecutive steps, one card each, with the diagram and
+ * terminal held still so only the card changes. */
+function expand(list) {
+  var out = [];
+  list.forEach(function (fr) {
+    var tail = [];
+    if (fr.more) tail.push("more");
+    if (fr.action) tail.push("action");
+    if (!tail.length) { out.push(fr); return; }
+    var head = {};
+    Object.keys(fr).forEach(function (k) {
+      if (k !== "more" && k !== "action") head[k] = fr[k];
+    });
+    out.push(head);
+    tail.forEach(function (which) {
+      var step = {};
+      Object.keys(head).forEach(function (k) {
+        if (k !== "title" && k !== "body") step[k] = head[k];
+      });
+      step[which] = fr[which];
+      out.push(step);
+    });
+  });
+  return out;
+}
+
+var state = { mode: "before", i: 0, timer: null };
+function frames() { return expand(MODES[state.mode].frames); }
+
+function renderLegend() {
+  var node = document.getElementById("legend");
+  node.innerHTML = "";
+  [["border-color:#8e44ad;background:#f5eef8", "your laptop"],
+   ["border-color:#2980b9;background:#eaf2f8", "inside the container"],
+   ["border-color:#e67e22", "happening now"],
+   ["border-color:#c0392b;background:#fdecea", "where it failed"],
+   ["border-style:dashed", "does not exist yet"]].forEach(function (e) {
+    var sp = document.createElement("span");
+    sp.innerHTML = '<i style="' + e[0] + '"></i>' + e[1];
+    node.appendChild(sp);
+  });
+}
+
+function render() {
+  renderLegend();
+  var fr = frames()[state.i];
+  var stage = document.getElementById("stage");
+  stage.innerHTML = "";
+
+  if (fr.todo) {
+    var tb = el("div", "todobar");
+    tb.appendChild(el("span", "tag", "THIS STEP IS FOR"));
+    tb.appendChild(el("span", "what", fr.todo));
+    stage.appendChild(tb);
+  }
+
+  var grid = el("div", "stage");
+
+  var pipe = el("div", "pipe");
+  ROWS.forEach(function (row, ri) {
+    if (ri) pipe.appendChild(el("div", "boundary"));
+    var r = el("div", "stageRow");
+    var nm = el("div", "stageName");
+    nm.appendChild(el("span", "sideLbl " + row.side, row.name));
+    r.appendChild(nm);
+    row.items.forEach(function (item, idx) {
+      if (idx) r.appendChild(el("span", "arrow", "&middot;"));
+      var st = fr.boxes[item] || "pending";
+      var b = el("div", "box " + row.kind +
+                        (st === "pending" ? " pending" : "") +
+                        (st === "bad" ? " bad" : "") +
+                        (fr.active === item ? " active" : ""));
+      b.appendChild(el("div", "nm", item));
+      b.appendChild(el("div", "meta",
+        st === "pending" ? "not there yet" : (st === "bad" ? "failed here" : "ready")));
+      r.appendChild(b);
+    });
+    pipe.appendChild(r);
+  });
+  grid.appendChild(pipe);
+
+  var side = el("div", "side");
+  var tw = el("div", "termwrap");
+  tw.appendChild(el("div", "tlabel", "TERMINAL"));
+  var term = el("div", "term");
+  fr.term.forEach(function (pair) {
+    var s = document.createElement("span");
+    if (pair[0]) s.className = pair[0];
+    s.textContent = pair[1] + "\n";
+    term.appendChild(s);
+  });
+  tw.appendChild(term);
+  side.appendChild(tw);
+
+  if (fr.body) {
+    var card = el("div", "card");
+    card.appendChild(el("h3", null, fr.title));
+    card.appendChild(asList(fr.body));
+    side.appendChild(card);
+  }
+  if (fr.more) {
+    var mc = el("div", "card deeper");
+    mc.appendChild(el("h3", null, "&#8627; Going deeper &mdash; optional"));
+    mc.appendChild(asList(fr.more));
+    side.appendChild(mc);
+  }
+  if (fr.action) {
+    var ac = el("div", "card action");
+    ac.appendChild(el("h3", null, "&#9654; Your turn"));
+    ac.appendChild(el("p", null, fr.action.do));
+    if (fr.action.where) ac.appendChild(el("div", "where", fr.action.where));
+    side.appendChild(ac);
+  }
+  grid.appendChild(side);
+  stage.appendChild(grid);
+
+  document.getElementById("frameCount").textContent =
+    MODES[state.mode].label + "  -  step " + (state.i + 1) +
+    " of " + frames().length;
+  document.getElementById("first").disabled = state.i === 0;
+  document.getElementById("prev").disabled  = state.i === 0;
+  document.getElementById("next").disabled  = state.i >= frames().length - 1;
+  document.getElementById("last").disabled  = state.i >= frames().length - 1;
+}
+
+function go(i) {
+  var n = frames().length;
+  state.i = Math.max(0, Math.min(n - 1, i));
+  render();
+}
+function stop() {
+  if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  document.getElementById("play").innerHTML = "&#9654; Play";
+}
+function play() {
+  if (state.timer) { stop(); return; }
+  if (state.i >= frames().length - 1) state.i = 0;
+  document.getElementById("play").innerHTML = "&#10073;&#10073; Pause";
+  state.timer = setInterval(function () {
+    if (state.i >= frames().length - 1) { stop(); return; }
+    go(state.i + 1);
+  }, 1900);
+}
+
+document.getElementById("first").addEventListener("click", function () { stop(); go(0); });
+document.getElementById("prev").addEventListener("click",  function () { stop(); go(state.i - 1); });
+document.getElementById("next").addEventListener("click",  function () { stop(); go(state.i + 1); });
+document.getElementById("last").addEventListener("click",  function () { stop(); go(frames().length - 1); });
+document.getElementById("play").addEventListener("click", play);
+
+Array.prototype.forEach.call(document.querySelectorAll("#tabs [data-mode]"), function (b) {
+  b.addEventListener("click", function () {
+    stop();
+    state.mode = b.getAttribute("data-mode");
+    state.i = 0;
+    Array.prototype.forEach.call(document.querySelectorAll("#tabs [data-mode]"), function (o) {
+      o.setAttribute("aria-selected", String(o === b));
+    });
+    render();
+  });
+});
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "ArrowRight") { stop(); go(state.i + 1); e.preventDefault(); }
+  else if (e.key === "ArrowLeft") { stop(); go(state.i - 1); e.preventDefault(); }
+  else if (e.key === " ") { play(); e.preventDefault(); }
+});
+
+// ---------------------------------------------------------------------------
+// Self-test: the page proves its own frames are coherent, so a typo shows up
+// here rather than in front of a class. Silent when it passes.
+// ---------------------------------------------------------------------------
+(function selftest() {
+  var fails = [];
+  function ok(cond, msg) { if (!cond) fails.push(msg); }
+
+  var every = [];
+  ROWS.forEach(function (r) { every = every.concat(r.items); });
+
+  Object.keys(MODES).forEach(function (m) {
+    var fs = MODES[m].frames;
+    ok(fs.length > 0, m + ": has frames");
+    fs.forEach(function (fr, i) {
+      var where = m + " frame " + (i + 1);
+      ok(!!fr.title && Array.isArray(fr.body), where + ": title and bullet body");
+      ok(!!fr.todo, where + ": every step must name its TODO");
+      ok(Array.isArray(fr.term) && fr.term.length > 0, where + ": terminal output");
+      every.forEach(function (nm) {
+        ok(fr.boxes[nm] !== undefined, where + ": missing state for " + nm);
+      });
+      ok(every.indexOf(fr.active) >= 0, where + ": active names a real box");
+    });
+    var last = fs[fs.length - 1];
+    ok(!!last.action, m + ": last frame must hand off");
+    if (last.action) ok(!!last.action.do && !!last.action.where,
+                        m + ": hand-off needs an instruction and a location");
+  });
+
+  // The teaching points, asserted so an edit cannot quietly undo them.
+  // Tab 1: the compiler genuinely does not exist before the container does.
+  ok(MODES.before.frames[0].boxes["g++ 13"] === "pending",
+     "tab 1: g++ must not exist before the container");
+  // Tab 2: the files are mounted BEFORE the compiler is reachable, because the
+  // mount is what makes them the same files rather than copies.
+  ok(MODES.open.frames[2].boxes["/workspaces"] === "ok" &&
+     MODES.open.frames[2].boxes["g++ 13"] === "pending",
+     "tab 2: the mount must land before the compiler");
+  // Tab 4: the wrong-side failure is NOT a broken container -- everything on
+  // the container row is fine and the command was simply typed outside.
+  ok(MODES.wrong.frames[1].boxes["Ubuntu 24.04"] === "ok" &&
+     MODES.wrong.frames[1].boxes["/workspaces"] === "ok",
+     "tab 4: the wrong-side case must show a healthy container");
+
+  var node = document.getElementById("selftest");
+  if (!fails.length) { node.style.display = "none"; return; }
+  node.style.display = "";
+  node.style.color = "#c0392b";
+  node.style.fontWeight = "700";
+  node.textContent = "Stepper self-test: " + fails.length + " problem(s) -- " + fails.join("; ");
+})();
+
+render();
+</script>
+</body>
+</html>
