@@ -5,169 +5,263 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CS 1410 &middot; Branches &amp; Pull Requests, one step at a time</title>
 <style>
-  :root {
-    --ink: #2c3e50; --muted: #5b6b7a; --line: #d7dae0; --bg: #fcfcfd;
-    --blue: #2980b9; --blueBg: #eaf2f8;
-    --purple: #8e44ad; --purpleBg: #f5eef8;
-    --green: #27ae60; --greenBg: #f0faf0;
-    --orange: #e67e22;
-    --red: #c0392b; --redBg: #fdecea;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; padding: 24px 16px 64px;
-         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-         color: var(--ink); background: #fff; }
-  .wrap { margin: 0 auto; }
-  h1 { font-size: 1.35rem; margin: 0 0 .35rem; }
-  .sub { color: var(--muted); margin: 0 0 1.1rem; line-height: 1.5; font-size: .9rem; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-          border-bottom: 2px solid var(--line); padding-bottom: 10px; margin-bottom: 14px; }
-  .tabs button { font-size: .95rem; font-weight: 600; cursor: pointer; padding: 8px 14px;
-                 border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); }
-  .tabs button[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
-  .spacer { flex: 1; }
-  .hint { color: var(--muted); font-size: .85rem; }
-  .panel { border: 1px solid var(--line); border-radius: 9px; background: var(--bg);
-           padding: 10px 12px; margin-bottom: 14px; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .lbl { font-weight: 700; font-size: .85rem; color: var(--muted);
-         text-transform: uppercase; letter-spacing: .04em; min-width: 54px; }
-  .ctl { font: inherit; cursor: pointer; padding: 6px 12px; border: 1px solid var(--line);
-         border-radius: 6px; background: #fff; color: var(--ink); }
-  .ctl:disabled { opacity: .4; cursor: default; }
-  .ctl.primary { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
-  .count { margin-left: auto; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+/* @stepper:css */
+/* stepper.css -- the canonical look of every CS 1410 stepper.
+ *
+ * Do not edit this inside a stepper. Edit it HERE, then run
+ * `python scripts/build_steppers.py`, which inlines it into every stepper
+ * between its @stepper:css markers. `--check` reports drift. Same contract as
+ * templates/cpp-starter/ and sync_tooling.py, and for the same reason: there
+ * will be two steppers a week for twelve weeks, and twenty-five hand-copied
+ * copies of a 900-line file drift by the sixth one.
+ *
+ * Sizes, colours and spacing are CT0's (hello-cpp), kept deliberately: it is
+ * the one that has been shown on a projector and it reads from the back.
+ */
 
-  .todobar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-             background: #fff8e1; border-left: 5px solid #8f6a00;
-             border-radius: 0 8px 8px 0; padding: .5rem .85rem; margin-bottom: 14px; }
-  .todobar .tag { background: #8f6a00; color: #fff; border-radius: 4px;
-                  padding: .1rem .5rem; font-size: .76rem; letter-spacing: .05em; font-weight: 700; }
-  .todobar .what { font-size: 1rem; }
-  .todobar code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .89rem; }
+:root {
+  --ink: #2c3e50; --muted: #5b6b7a; --line: #d7dae0; --bg: #fcfcfd;
+  --blue: #2980b9; --blueBg: #eaf2f8;
+  --purple: #8e44ad; --purpleBg: #f5eef8;
+  --green: #27ae60; --greenBg: #f0faf0;
+  --orange: #e67e22; --orangeBg: #fff3e0;
+  --red: #c0392b; --redBg: #fdecea;
+}
+* { box-sizing: border-box; }
 
-  .stage { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr);
-           gap: 20px; align-items: start; }
-  .stage > .pipe  { grid-column: 1; }
-  .stage > .aside { grid-column: 1; }
-  /* spans both rows, so row 1 is only as tall as the picture and the optional
-     card sits directly under it instead of below the whole right-hand stack */
-  .stage > .side  { grid-column: 2; grid-row: 1 / span 2; }
-  @media (max-width: 820px) {
-    /* one column: the optional card goes last, after the explanation */
-    .stage { grid-template-columns: 1fr; }
-    .stage > .pipe  { grid-column: 1; order: 1; }
-    .stage > .side  { grid-column: 1; grid-row: auto; order: 2; }
-    .stage > .aside { grid-column: 1; order: 3; }
-  }
+/* Reserve the scrollbar's space, always.
+ *
+ * This is the real cause of the panes shifting. When one step is short and the
+ * next is tall, the page's vertical scrollbar appears -- and the viewport
+ * instantly narrows by ~15px, so every column shifts left. It looks like the
+ * layout is moving; what moved is the window. In CT0 it happens between steps
+ * 3 and 4 of the first tab.
+ *
+ * Reserving the gutter means the scrollbar costs its width whether or not it
+ * is there, so appearing can never move anything. The @supports fallback is
+ * for engines without scrollbar-gutter, where always painting a track does
+ * the same job less elegantly.
+ *
+ * This makes the shift impossible. It does NOT make a too-tall step acceptable
+ * -- see the one-screen rule in templates/stepper/README.md, which
+ * verify_stepper.js enforces. */
+html { scrollbar-gutter: stable; }
+@supports not (scrollbar-gutter: stable) { html { overflow-y: scroll; } }
 
-  .pipe { border: 1px solid var(--line); border-radius: 9px; padding: 14px; background: #fff; }
+/* Tight furniture. 342px of the 760px one-screen budget used to be chrome
+   before a single line of content -- padding, heading, tabs, controls,
+   legend. Trimming it buys ~74px for teaching on EVERY step of every
+   stepper, which is a better trade than cutting an explanation. */
+body { margin: 0; padding: 14px 16px 20px;
+       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+       color: var(--ink); background: #fff; }
+/* No max-width. These run the full browser width and read far better for it --
+   code, terminal and explanation side by side instead of stacked. */
+.wrap { margin: 0 auto; }
+h1 { font-size: 1.35rem; margin: 0 0 .35rem; }
+.sub { color: var(--muted); margin: 0 0 .6rem; line-height: 1.5; font-size: .9rem; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        border-bottom: 2px solid var(--line); padding-bottom: 7px; margin-bottom: 10px; }
+.tabs button { font-size: .95rem; font-weight: 600; cursor: pointer; padding: 8px 14px;
+               border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.spacer { flex: 1; }
+.hint { color: var(--muted); font-size: .85rem; }
+.panel { border: 1px solid var(--line); border-radius: 9px; background: var(--bg);
+         padding: 7px 12px; margin-bottom: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lbl { font-weight: 700; font-size: .85rem; color: var(--muted);
+       text-transform: uppercase; letter-spacing: .04em; min-width: 54px; }
+.ctl { font: inherit; cursor: pointer; padding: 6px 12px; border: 1px solid var(--line);
+       border-radius: 6px; background: #fff; color: var(--ink); }
+.ctl:disabled { opacity: .4; cursor: default; }
+.ctl.primary { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
+.count { margin-left: auto; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
 
-  /* ---- the commit graph ---------------------------------------------- */
-  .where { font-size: .78rem; font-weight: 700; letter-spacing: .05em;
-           text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
-  .lane { display: flex; align-items: center; gap: .55rem; margin: 0 0 .7rem; flex-wrap: wrap; }
-  .lane .nm { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .95rem;
-              font-weight: 700; min-width: 7.5rem; }
-  .lane .nm.branch { color: var(--purple); }
-  .lane .nm.main { color: var(--blue); }
-  .dot { width: 1.55rem; height: 1.55rem; border-radius: 50%; border: 2px solid var(--line);
-         background: #fff; display: inline-flex; align-items: center; justify-content: center;
-         font-size: .72rem; font-weight: 700; color: var(--muted); }
-  .dot.on-main { border-color: var(--blue); background: var(--blueBg); color: #1b5e8a; }
-  .dot.on-branch { border-color: var(--purple); background: var(--purpleBg); color: #6c3483; }
-  .dot.fresh { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(230,126,34,.22); }
-  .conn { color: var(--line); font-size: 1.1rem; }
-  .head { background: var(--ink); color: #fff; border-radius: 4px; padding: .1rem .45rem;
-          font-size: .7rem; font-weight: 800; letter-spacing: .05em; }
-  .lane .none { color: var(--muted); font-style: italic; font-size: .9rem; }
-  .pushed { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: .1rem .55rem;
-            background: #e8f5e9; color: #1c7e45; border: 1px solid #bfe3c9; }
-  .notpushed { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: .1rem .55rem;
-               background: #f2f4f7; color: #6b7684; border: 1px dashed #c7ccd4; }
-  .sep { border: 0; border-top: 1px dashed var(--line); margin: .9rem 0; }
+/* Names the TODO the current step is for, on EVERY step. The hand-off card at
+   the end of a tab says "go write it"; this says "this is the one" the whole
+   way through. */
+.todobar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+           background: #fff8e1; border-left: 5px solid #8f6a00;
+           border-radius: 0 8px 8px 0; padding: .35rem .85rem; margin-bottom: 10px;
+           min-height: 40px; }
+.todobar .tag { background: #8f6a00; color: #fff; border-radius: 4px;
+                padding: .1rem .5rem; font-size: .76rem; letter-spacing: .05em; }
+.todobar .what { font-size: 1rem; }
+.todobar code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .89rem; }
 
-  /* ---- the pull request card ----------------------------------------- */
-  .prcard { border: 2px solid var(--line); border-radius: 9px; padding: .7rem .9rem;
-            margin-top: .4rem; background: #fff; }
-  .prcard.open { border-color: var(--green); background: var(--greenBg); }
-  .prcard.merged { border-color: var(--purple); background: var(--purpleBg); }
-  .prcard .t { font-weight: 800; font-size: .98rem; }
-  .prcard .meta { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .88rem;
-                  color: #1b5e8a; margin-top: .25rem; }
-  .prcard .state { font-size: .74rem; font-weight: 800; letter-spacing: .05em;
-                   border-radius: 999px; padding: .1rem .6rem; margin-left: .4rem; }
-  .prcard.open .state { background: var(--green); color: #fff; }
-  .prcard.merged .state { background: var(--purple); color: #fff; }
+/* ------------------------------------------------------------------ THE SPLIT
+ * Code on the left, terminal and explanation on the right, EVENLY, and the
+ * divide does not move from step to step.
+ *
+ * It used to be `minmax(0,1.2fr) minmax(0,1fr)`, and the panes visibly shifted
+ * left and right as you stepped. Three things cause that, and all three are
+ * fixed here, because fixing only the first leaves the wobble:
+ *
+ *   1. Uneven, content-influenced columns -> both are now minmax(0,1fr),
+ *      which is an exact half each regardless of what is in them.
+ *   2. A long code line widening its own column -> the code body scrolls
+ *      horizontally inside the pane (.codebox .body) instead of growing it.
+ *   3. A pane with nothing in it on some steps collapsing and springing back
+ *      -> both panes carry a min-height, so an empty terminal still holds
+ *      its half of the stage.
+ *
+ * On a projector a layout that jumps every step costs the room its place. */
+.stage { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+         gap: 20px; align-items: start; }
+.stage > * { min-width: 0; }            /* grid children must be allowed to shrink */
+@media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
 
-  .prcard .prnote { background: #f9e2af; color: #1e1e2e; font-weight: 600; line-height: 1.45;
-                    border-radius: 5px; padding: .3rem .75rem; margin-top: .5rem; font-size: 1.02rem; }
-  .prcard .prnote::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800;
-                            letter-spacing: .06em; color: #4a3600; background: rgba(0,0,0,.10);
-                            border-radius: 3px; padding: .08rem .4rem; margin-right: .55rem; }
+.pipe { border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: #fff;
+        min-height: 300px; }
+.stageRow { display: flex; align-items: center; gap: 10px; margin: 0 0 7px; flex-wrap: wrap; }
+.stageName { font-size: .78rem; font-weight: 700; letter-spacing: .05em;
+             text-transform: uppercase; color: var(--muted); width: 100%; margin-bottom: 1px;
+             line-height: 1.2; }
+.box { border: 2px solid var(--line); border-radius: 8px; padding: 6px 12px; min-width: 128px;
+       background: #fff; transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease; }
+.box .nm { font-weight: 700; font-size: .95rem; }
+.box .meta { font-size: .76rem; color: var(--muted); margin-top: 1px; line-height: 1.25; }
+.box.pending { border-style: dashed; opacity: .45; }
+.box.src { border-color: var(--blue); background: var(--blueBg); }
+.box.obj { border-color: var(--purple); background: var(--purpleBg); }
+.box.exe { border-color: var(--green); background: var(--greenBg); }
+.box.active { box-shadow: 0 0 0 4px rgba(230,126,34,.25); border-color: var(--orange); }
+.box.bad { border-color: var(--red); background: var(--redBg); }
+.arrow { color: var(--muted); font-size: 1.3rem; line-height: 1; }
 
-  /* ---- a review comment pinned to the diff --------------------------- */
-  .review { border: 1px solid var(--line); border-left: 4px solid var(--orange);
-            border-radius: 0 8px 8px 0; background: #fffaf3; padding: .7rem .9rem; margin-top: .8rem; }
-  .review .who { font-weight: 800; font-size: .95rem; }
-  .review .who .when { font-weight: 400; color: var(--muted); margin-left: .4rem; font-size: .82rem; }
-  .review .on { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .85rem;
-                color: var(--muted); background: #fff; border: 1px solid var(--line);
-                border-radius: 5px; padding: .15rem .5rem; display: inline-block; margin: .35rem 0 .1rem; }
-  .review .what { font-size: 1.05rem; line-height: 1.5; margin: .35rem 0 0; }
-  .review .reply { margin: .55rem 0 0; font-size: .97rem; color: #1c7e45; font-weight: 700; }
+.side { display: flex; flex-direction: column; gap: 12px; min-height: 300px; }
+.card { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; background: #fff; }
+.card h3 { margin: 0 0 .45rem; font-size: 1.15rem; }
+.card p { margin: .35rem 0; line-height: 1.5; font-size: 1.05rem; }
+.card .blist { margin: .3rem 0 0; padding-left: 1.15rem; }
+/* The bullets ARE the explanation, so they get read from the back of the room:
+   1.1rem, same as the THIS STEP pill. The heading stays a step above them so it
+   still leads. Prose is not an option here -- see build_steppers.py --check,
+   which fails a card paragraph long enough to be a paragraph. */
+.card .blist li { margin: .38rem 0; line-height: 1.5; font-size: 1.1rem; }
+.card.deeper .blist li { font-size: 1rem; }
+.termwrap { border-radius: 9px; overflow: hidden; }
+.termwrap .tlabel { background: #11151c; color: #7d8795; padding: 5px 12px;
+                    font-family: Consolas, "SF Mono", Menlo, monospace;
+                    font-size: .76rem; font-weight: 700; letter-spacing: .08em; }
+.term { background: #1e2430; color: #e6e9ef; padding: 12px 14px;
+        font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 1.2rem;
+        line-height: 1.55; white-space: pre-wrap; min-height: 104px;
+        overflow-x: auto; }
+.term .cmd { color: #8fd4ff; }
+.term .err { color: #ff9a8f; }
+.term .ok  { color: #9ae6a4; }
+.term .dim { color: #9aa4b2; }
 
-  /* ---- the diff ------------------------------------------------------- */
-  .codebox { --code-bg:#1e1e2e; --code-fg:#cdd6f4; --code-hit:#45475a;
-             border-radius: 8px; overflow: hidden; background: var(--code-bg); margin-top: .8rem; }
-  .codebox .fn { background: #181825; color: #9399b2; padding: 6px 11px; font-weight: 700;
-                 font-size: .78rem; font-family: Consolas, "SF Mono", Menlo, monospace;
-                 border-bottom: 1px solid #313244; }
-  .codebox .body { padding: .6rem 0; overflow-x: auto; color: var(--code-fg);
-                   font-family: Consolas, "Courier New", monospace;
-                   font-size: 1.35rem; line-height: 1.6; }
-  .codebox .ln { padding: 0 .8rem; white-space: pre; }
-  .codebox .ln.add { background: rgba(64,160,43,.22); color: #b7f0a8; }
-  .codebox .ln.del { background: rgba(192,57,43,.20); color: #ffb3aa; }
-  .codebox .ln.hl { background: var(--code-hit); display: flex; align-items: center; flex-wrap: wrap; }
-  .codebox .ln.hl .src { white-space: pre; padding-right: 1.6rem; }
-  .codebox .calc { background: #f9e2af; color: #1e1e2e; font-weight: 600; white-space: pre-wrap;
-                   border-radius: 5px; padding: .1rem .75rem; font-size: 1.1rem; }
-  .codebox .calc::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800;
-                           letter-spacing: .06em; color: #4a3600; background: rgba(0,0,0,.10);
-                           border-radius: 3px; padding: .08rem .4rem; margin-right: .55rem; }
+/* Code panel. Catppuccin Mocha, the same look and size as the CS 2420
+   steppers, so a student moving between courses sees one thing. */
+.codebox { --code-bg:#1e1e2e; --code-fg:#cdd6f4; --code-hit:#45475a;
+           border-radius: 8px; overflow: hidden; background: var(--code-bg); }
+.codebox .fn { background: #181825; color: #9399b2; padding: 6px 11px;
+               font-weight: 700; font-size: .78rem;
+               font-family: Consolas, "SF Mono", Menlo, monospace;
+               border-bottom: 1px solid #313244; }
+/* overflow-x here, not on the pane: a long line scrolls inside the code box
+   rather than widening the column and squeezing the terminal. */
+.codebox .body { padding: .6rem 0; overflow-x: auto; color: var(--code-fg);
+                 font-family: Consolas, "Courier New", monospace;
+                 font-size: 1.35rem; line-height: 1.6; }
+.codebox .ln { padding: 0 .8rem; white-space: pre; }
+.codebox .ln.hl { background: var(--code-hit); }
+.codebox .ln.hl::before { content: "\25B8 "; color: #f9e2af; }
+.codebox .ln:not(.hl)::before { content: "  "; }
+/* Catppuccin Mocha token colours */
+.codebox .c-com { color:#6c7086; font-style: italic; }
+.codebox .c-str { color:#a6e3a1; }
+.codebox .c-kw  { color:#cba6f7; }
+.codebox .c-typ { color:#89b4fa; }
+.codebox .c-num { color:#fab387; }
+.codebox .c-pre { color:#f5c2e7; }
 
-  .side { display: flex; flex-direction: column; gap: 14px; }
-  .card { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; background: #fff; }
-  .card h3 { margin: 0 0 .45rem; font-size: 1.15rem; }
-  .card .blist { margin: .3rem 0 0; padding-left: 1.15rem; }
-  .card .blist li { margin: .38rem 0; line-height: 1.5; font-size: 1.1rem; }
-  .card.deeper { border-left: 4px solid var(--blue); background: #f7fbfe; }
-  .card.deeper h3 { color: #1b5e8a; font-size: 1.02rem; }
-  .card.deeper .blist li { font-size: 1rem; }
-  .card.action { border: 2px solid var(--green); background: var(--greenBg); }
-  .card.action h3 { color: #1c7e45; }
-  .card.action .whereto { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .86rem;
-                          background: #fff; border: 1px solid #bfe3c9; border-radius: 6px;
-                          padding: 6px 9px; display: inline-block; margin: .3rem 0; }
+/* THIS STEP, inline on the executing row. Keeping it on the same line as the
+   code it describes is the whole point: nothing to look back and forth
+   between. Nothing else in the panel has a light background, which is what
+   makes it unmistakable. */
+.codebox .ln.hl { display: flex; align-items: center; flex-wrap: wrap; }
+.codebox .ln.hl .src { white-space: pre; padding-right: 1.6rem; }
+.codebox .calc { background: #f9e2af; color: #1e1e2e; font-weight: 600;
+                 white-space: pre-wrap; border-radius: 5px;
+                 padding: .1rem .75rem; font-size: 1.1rem; }
+.codebox .calc::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800;
+                         letter-spacing: .06em; color: #4a3600;
+                         background: rgba(0,0,0,.10); border-radius: 3px;
+                         padding: .08rem .4rem; margin-right: .55rem; }
+.codebox .calc code { background: rgba(0,0,0,.09); border-radius: 3px;
+                      padding: .02em .28em; font-size: .95em; }
 
-  .termwrap { border-radius: 9px; overflow: hidden; }
-  .termwrap .tlabel { background: #11151c; color: #7d8795; padding: 5px 12px;
-                      font-family: Consolas, "SF Mono", Menlo, monospace;
-                      font-size: .76rem; font-weight: 700; letter-spacing: .08em; }
-  .term { background: #1e2430; color: #e6e9ef; padding: 12px 14px;
-          font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 1.2rem;
-          line-height: 1.55; white-space: pre-wrap; min-height: 104px; }
-  .term .cmd { color: #8fd4ff; }
-  .term .err { color: #ff9a8f; }
-  .term .ok  { color: #9ae6a4; }
-  .term .dim { color: #9aa4b2; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 0;
+          color: var(--muted); font-size: .82rem; }
+.legend i { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line);
+            border-radius: 4px; vertical-align: -2px; margin-right: 5px; }
+table.cmp { border-collapse: collapse; width: 100%; font-size: .9rem; }
+table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.cmp th { background: #f2f4f7; }
+.tag { font-weight: 700; }
+.tag.okT { color: var(--green); } .tag.badT { color: var(--red); }
+.card.deeper { border-left: 4px solid var(--blue); background: #f7fbfe; }
+.card.deeper h3 { color: #1b5e8a; font-size: 1.02rem; }
+.card.deeper p { font-size: .93rem; }
+.card.action { border: 2px solid var(--green); background: var(--greenBg); }
+.card.action h3 { color: #1c7e45; }
+.card.action .where { font-family: Consolas, "SF Mono", Menlo, monospace;
+                      font-size: .86rem; background: #fff; border: 1px solid #bfe3c9;
+                      border-radius: 6px; padding: 6px 9px; display: inline-block;
+                      margin: .3rem 0; }
+.selftest { margin-top: 18px; font-size: .84rem; color: var(--muted); }
+/* /@stepper:css */
+</style>
+<style>
+/* This stepper only. Rules the shared template does not carry.
+   The template is stamped in above by scripts/build_steppers.py
+   and must not be edited here.
 
-  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 14px 0 0;
-            color: var(--muted); font-size: .82rem; }
-  .legend i { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line);
-              border-radius: 50%; vertical-align: -2px; margin-right: 5px; }
-  .selftest { margin-top: 18px; font-size: .84rem; }
+   @media blocks are kept WHOLE on purpose: flattening one is how
+   a narrow-screen single-column fallback ended up applying on
+   every screen and stacked the panes. */
+.stage > .pipe { grid-column: 1; }
+.stage > .aside { grid-column: 1; }
+.stage > .side { grid-column: 2; grid-row: 1 / span 2; }
+@media (max-width: 820px) { .stage { grid-template-columns: 1fr; } .stage > .pipe { grid-column: 1; order: 1; } .stage > .side { grid-column: 1; grid-row: auto; order: 2; } .stage > .aside { grid-column: 1; order: 3; } }
+.where { font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
+.lane { display: flex; align-items: center; gap: .55rem; margin: 0 0 .7rem; flex-wrap: wrap; }
+.lane .nm { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .95rem; font-weight: 700; min-width: 7.5rem; }
+.lane .nm.branch { color: var(--purple); }
+.lane .nm.main { color: var(--blue); }
+.dot { width: 1.55rem; height: 1.55rem; border-radius: 50%; border: 2px solid var(--line); background: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 700; color: var(--muted); }
+.dot.on-main { border-color: var(--blue); background: var(--blueBg); color: #1b5e8a; }
+.dot.on-branch { border-color: var(--purple); background: var(--purpleBg); color: #6c3483; }
+.dot.fresh { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(230,126,34,.22); }
+.conn { color: var(--line); font-size: 1.1rem; }
+.head { background: var(--ink); color: #fff; border-radius: 4px; padding: .1rem .45rem; font-size: .7rem; font-weight: 800; letter-spacing: .05em; }
+.lane .none { color: var(--muted); font-style: italic; font-size: .9rem; }
+.pushed { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: .1rem .55rem; background: #e8f5e9; color: #1c7e45; border: 1px solid #bfe3c9; }
+.notpushed { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: .1rem .55rem; background: #f2f4f7; color: #6b7684; border: 1px dashed #c7ccd4; }
+.sep { border: 0; border-top: 1px dashed var(--line); margin: .9rem 0; }
+.prcard { border: 2px solid var(--line); border-radius: 9px; padding: .7rem .9rem; margin-top: .4rem; background: #fff; }
+.prcard.open { border-color: var(--green); background: var(--greenBg); }
+.prcard.merged { border-color: var(--purple); background: var(--purpleBg); }
+.prcard .t { font-weight: 800; font-size: .98rem; }
+.prcard .meta { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .88rem; color: #1b5e8a; margin-top: .25rem; }
+.prcard .state { font-size: .74rem; font-weight: 800; letter-spacing: .05em; border-radius: 999px; padding: .1rem .6rem; margin-left: .4rem; }
+.prcard.open .state { background: var(--green); color: #fff; }
+.prcard.merged .state { background: var(--purple); color: #fff; }
+.prcard .prnote { background: #f9e2af; color: #1e1e2e; font-weight: 600; line-height: 1.45; border-radius: 5px; padding: .3rem .75rem; margin-top: .5rem; font-size: 1.02rem; }
+.prcard .prnote::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800; letter-spacing: .06em; color: #4a3600; background: rgba(0,0,0,.10); border-radius: 3px; padding: .08rem .4rem; margin-right: .55rem; }
+.review { border: 1px solid var(--line); border-left: 4px solid var(--orange); border-radius: 0 8px 8px 0; background: #fffaf3; padding: .7rem .9rem; margin-top: .8rem; }
+.review .who { font-weight: 800; font-size: .95rem; }
+.review .who .when { font-weight: 400; color: var(--muted); margin-left: .4rem; font-size: .82rem; }
+.review .on { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .85rem; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: 5px; padding: .15rem .5rem; display: inline-block; margin: .35rem 0 .1rem; }
+.review .what { font-size: 1.05rem; line-height: 1.5; margin: .35rem 0 0; }
+.review .reply { margin: .55rem 0 0; font-size: .97rem; color: #1c7e45; font-weight: 700; }
+.codebox .ln.add { background: rgba(64,160,43,.22); color: #b7f0a8; }
+.codebox .ln.del { background: rgba(192,57,43,.20); color: #ffb3aa; }
+.card.action .whereto { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .86rem; background: #fff; border: 1px solid #bfe3c9; border-radius: 6px; padding: 6px 9px; display: inline-block; margin: .3rem 0; }
 </style>
 </head>
 <body>
@@ -572,7 +666,50 @@ function el(tag, cls, html) {
   if (html !== undefined) n.innerHTML = html;
   return n;
 }
-function frames() { return MODES[state.mode].frames; }
+/* One card per step.
+ *
+ * A step used to stack the explanation, the optional "Going deeper" card and
+ * the "Your turn" hand-off on top of one another. Three cards plus a terminal
+ * do not fit on a projector screen -- which is where the page scrollbar came
+ * from, and the scrollbar narrowing the viewport is what shifted the columns.
+ *
+ * So a frame carrying more than one card is expanded into consecutive steps,
+ * one card each, all sharing the same code, terminal and TODO bar. The left
+ * half of the screen does not move at all across them; only the card changes,
+ * which is calm to watch and gives the room one thing to read at a time.
+ *
+ * Done here rather than in the frame data so every tab gets it for free, no
+ * frame has to be written twice, and the self-test still sees the frames as
+ * authored.
+ */
+function expand(list) {
+  var out = [];
+  list.forEach(function (fr) {
+    var tail = [];
+    if (fr.more) tail.push("more");
+    if (fr.action) tail.push("action");
+    if (!tail.length) { out.push(fr); return; }
+
+    var head = {};
+    Object.keys(fr).forEach(function (k) {
+      if (k !== "more" && k !== "action") head[k] = fr[k];
+    });
+    out.push(head);
+
+    tail.forEach(function (which) {
+      var step = {};
+      // Everything the left pane and the terminal need, so they hold still.
+      Object.keys(head).forEach(function (k) {
+        if (k !== "title" && k !== "body") step[k] = head[k];
+      });
+      step[which] = fr[which];
+      out.push(step);
+    });
+  });
+  return out;
+}
+
+function frames() { return expand(MODES[state.mode].frames); }
 
 function asList(body) {
   if (!Array.isArray(body)) return el("p", null, body);
@@ -700,10 +837,12 @@ function render() {
   tw.appendChild(term);
   side.appendChild(tw);
 
-  var card = el("div", "card");
-  card.appendChild(el("h3", null, fr.title));
-  card.appendChild(asList(fr.body));
-  side.appendChild(card);
+  if (fr.body) {
+    var card = el("div", "card");
+    card.appendChild(el("h3", null, fr.title));
+    card.appendChild(asList(fr.body));
+    side.appendChild(card);
+  }
 
   if (fr.action) {
     var ac = el("div", "card action");

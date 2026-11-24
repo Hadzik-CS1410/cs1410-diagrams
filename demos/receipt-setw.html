@@ -3,99 +3,255 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CS 1410 &middot; Lining Up Columns with setw</title>
+<title>CS 1410 &middot; CT 1 &mdash; Lining up columns with setw</title>
 <style>
-  :root {
-    --ink: #1a1a2e; --dim: #56657d; --line: #d4dae4; --bg: #f4f6f9;
-    --green: #0a7040; --amber: #8f6a00; --red: #b03030;
-    --dark: #1e2430; --code: #e6e6e6; --hl: #f9e2af;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; padding: 1.25rem; background: var(--bg); color: var(--ink);
-    font-family: "Segoe UI", Helvetica, Arial, sans-serif; font-size: 15px;
-  }
-  .wrap { max-width: 1180px; margin: 0 auto; }
-  header.hd {
-    background: linear-gradient(135deg,#1e2430 0%,#2c3e50 50%,#34495e 100%);
-    color: #fff; border-radius: 12px; padding: 1.4rem 1.7rem 1.2rem;
-  }
-  header.hd .crumb { font-size: .74rem; opacity: .85; }
-  header.hd h1 { font-size: 1.5rem; margin: .35rem 0 .3rem; }
-  header.hd p { margin: 0; font-size: .93rem; opacity: .93; }
-  #tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 .75rem; }
-  #tabs button {
-    font: inherit; font-size: .88rem; padding: .5rem .85rem; cursor: pointer;
-    border: 1px solid var(--line); background: #fff; border-radius: 8px;
-    color: var(--ink);
-  }
-  #tabs button[aria-selected="true"] {
-    background: var(--green); border-color: var(--green); color: #fff;
-    font-weight: 700;
-  }
-  .bar {
-    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
-    background: #fff; border: 1px solid var(--line); border-radius: 8px;
-    padding: .5rem .7rem; margin-bottom: .85rem;
-  }
-  .bar button {
-    font: inherit; font-size: .85rem; padding: .4rem .8rem; cursor: pointer;
-    border: 1px solid var(--line); background: #fff; border-radius: 6px;
-  }
-  .bar button:disabled { opacity: .4; cursor: default; }
-  .bar .count { font-size: .83rem; color: var(--dim); margin-left: auto; }
-  .todo {
-    font-size: .83rem; color: var(--amber); background: #fff8e1;
-    border: 1px solid #e8d9a8; border-radius: 6px; padding: .25rem .55rem;
-  }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-  .card {
-    background: #fff; border: 1px solid var(--line); border-radius: 10px;
-    padding: .9rem 1.1rem;
-  }
-  .card h3 { margin: 0 0 .5rem; font-size: 1rem; }
-  .card p { margin: 0 0 .5rem; font-size: .92rem; line-height: 1.5; }
-  .card p:last-child { margin-bottom: 0; }
-  pre.code {
-    background: var(--dark); color: var(--code); border-radius: 8px;
-    padding: .75rem .9rem; margin: 0; overflow-x: auto;
-    font-family: Consolas, Menlo, monospace; font-size: .86rem; line-height: 1.6;
-  }
-  pre.code .ln { color: #6b7a90; margin-right: .75rem; user-select: none; }
-  pre.code .on { background: rgba(249,226,175,.17); display: block;
-                 border-left: 3px solid var(--hl); margin-left: -.9rem;
-                 padding-left: calc(.9rem - 3px); }
-  /* The output panel is the point of this stepper: padding has to be VISIBLE. */
-  .out {
-    background: #fff; border: 1px solid var(--line); border-radius: 8px;
-    padding: .7rem .8rem; overflow-x: auto;
-    font-family: Consolas, Menlo, monospace; font-size: .95rem; line-height: 1.75;
-  }
-  .out .row { white-space: pre; }
-  .out .pad { color: #c3ccda; }               /* a space you can see */
-  .out .ch  { color: var(--ink); }
-  .out .ruler { white-space: pre; color: var(--dim); font-size: .78rem;
-                border-bottom: 1px dashed var(--line); padding-bottom: .2rem;
-                margin-bottom: .3rem; }
-  .out .bad { color: var(--red); font-weight: 700; }
-  .term {
-    background: #11161e; color: #cfe3d6; border-radius: 8px; padding: .7rem .9rem;
-    font-family: Consolas, Menlo, monospace; font-size: .84rem; line-height: 1.6;
-    overflow-x: auto;
-  }
-  .term .cmd { color: #9fe0b4; }
-  .term .dim { color: #7f8c98; }
-  .term .warn { color: #f0b46a; }
-  .action {
-    margin-top: .85rem; background: #f2f8f4; border-left: 5px solid var(--green);
-    border-radius: 8px; padding: .75rem .95rem; font-size: .92rem;
-  }
-  .action strong { color: var(--green); }
-  .legend { margin-top: .9rem; font-size: .84rem; color: var(--dim); }
-  .selftest { margin-top: .9rem; font-size: .86rem; }
-  code { background: #eef1f6; padding: .05rem .3rem; border-radius: 4px;
-         font-family: Consolas, Menlo, monospace; font-size: .92em; }
+/* @stepper:css */
+/* stepper.css -- the canonical look of every CS 1410 stepper.
+ *
+ * Do not edit this inside a stepper. Edit it HERE, then run
+ * `python scripts/build_steppers.py`, which inlines it into every stepper
+ * between its @stepper:css markers. `--check` reports drift. Same contract as
+ * templates/cpp-starter/ and sync_tooling.py, and for the same reason: there
+ * will be two steppers a week for twelve weeks, and twenty-five hand-copied
+ * copies of a 900-line file drift by the sixth one.
+ *
+ * Sizes, colours and spacing are CT0's (hello-cpp), kept deliberately: it is
+ * the one that has been shown on a projector and it reads from the back.
+ */
+
+:root {
+  --ink: #2c3e50; --muted: #5b6b7a; --line: #d7dae0; --bg: #fcfcfd;
+  --blue: #2980b9; --blueBg: #eaf2f8;
+  --purple: #8e44ad; --purpleBg: #f5eef8;
+  --green: #27ae60; --greenBg: #f0faf0;
+  --orange: #e67e22; --orangeBg: #fff3e0;
+  --red: #c0392b; --redBg: #fdecea;
+}
+* { box-sizing: border-box; }
+
+/* Reserve the scrollbar's space, always.
+ *
+ * This is the real cause of the panes shifting. When one step is short and the
+ * next is tall, the page's vertical scrollbar appears -- and the viewport
+ * instantly narrows by ~15px, so every column shifts left. It looks like the
+ * layout is moving; what moved is the window. In CT0 it happens between steps
+ * 3 and 4 of the first tab.
+ *
+ * Reserving the gutter means the scrollbar costs its width whether or not it
+ * is there, so appearing can never move anything. The @supports fallback is
+ * for engines without scrollbar-gutter, where always painting a track does
+ * the same job less elegantly.
+ *
+ * This makes the shift impossible. It does NOT make a too-tall step acceptable
+ * -- see the one-screen rule in templates/stepper/README.md, which
+ * verify_stepper.js enforces. */
+html { scrollbar-gutter: stable; }
+@supports not (scrollbar-gutter: stable) { html { overflow-y: scroll; } }
+
+/* Tight furniture. 342px of the 760px one-screen budget used to be chrome
+   before a single line of content -- padding, heading, tabs, controls,
+   legend. Trimming it buys ~74px for teaching on EVERY step of every
+   stepper, which is a better trade than cutting an explanation. */
+body { margin: 0; padding: 14px 16px 20px;
+       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+       color: var(--ink); background: #fff; }
+/* No max-width. These run the full browser width and read far better for it --
+   code, terminal and explanation side by side instead of stacked. */
+.wrap { margin: 0 auto; }
+h1 { font-size: 1.35rem; margin: 0 0 .35rem; }
+.sub { color: var(--muted); margin: 0 0 .6rem; line-height: 1.5; font-size: .9rem; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        border-bottom: 2px solid var(--line); padding-bottom: 7px; margin-bottom: 10px; }
+.tabs button { font-size: .95rem; font-weight: 600; cursor: pointer; padding: 8px 14px;
+               border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.spacer { flex: 1; }
+.hint { color: var(--muted); font-size: .85rem; }
+.panel { border: 1px solid var(--line); border-radius: 9px; background: var(--bg);
+         padding: 7px 12px; margin-bottom: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lbl { font-weight: 700; font-size: .85rem; color: var(--muted);
+       text-transform: uppercase; letter-spacing: .04em; min-width: 54px; }
+.ctl { font: inherit; cursor: pointer; padding: 6px 12px; border: 1px solid var(--line);
+       border-radius: 6px; background: #fff; color: var(--ink); }
+.ctl:disabled { opacity: .4; cursor: default; }
+.ctl.primary { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
+.count { margin-left: auto; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+
+/* Names the TODO the current step is for, on EVERY step. The hand-off card at
+   the end of a tab says "go write it"; this says "this is the one" the whole
+   way through. */
+.todobar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+           background: #fff8e1; border-left: 5px solid #8f6a00;
+           border-radius: 0 8px 8px 0; padding: .35rem .85rem; margin-bottom: 10px;
+           min-height: 40px; }
+.todobar .tag { background: #8f6a00; color: #fff; border-radius: 4px;
+                padding: .1rem .5rem; font-size: .76rem; letter-spacing: .05em; }
+.todobar .what { font-size: 1rem; }
+.todobar code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .89rem; }
+
+/* ------------------------------------------------------------------ THE SPLIT
+ * Code on the left, terminal and explanation on the right, EVENLY, and the
+ * divide does not move from step to step.
+ *
+ * It used to be `minmax(0,1.2fr) minmax(0,1fr)`, and the panes visibly shifted
+ * left and right as you stepped. Three things cause that, and all three are
+ * fixed here, because fixing only the first leaves the wobble:
+ *
+ *   1. Uneven, content-influenced columns -> both are now minmax(0,1fr),
+ *      which is an exact half each regardless of what is in them.
+ *   2. A long code line widening its own column -> the code body scrolls
+ *      horizontally inside the pane (.codebox .body) instead of growing it.
+ *   3. A pane with nothing in it on some steps collapsing and springing back
+ *      -> both panes carry a min-height, so an empty terminal still holds
+ *      its half of the stage.
+ *
+ * On a projector a layout that jumps every step costs the room its place. */
+.stage { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+         gap: 20px; align-items: start; }
+.stage > * { min-width: 0; }            /* grid children must be allowed to shrink */
+@media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
+
+.pipe { border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: #fff;
+        min-height: 300px; }
+.stageRow { display: flex; align-items: center; gap: 10px; margin: 0 0 7px; flex-wrap: wrap; }
+.stageName { font-size: .78rem; font-weight: 700; letter-spacing: .05em;
+             text-transform: uppercase; color: var(--muted); width: 100%; margin-bottom: 1px;
+             line-height: 1.2; }
+.box { border: 2px solid var(--line); border-radius: 8px; padding: 6px 12px; min-width: 128px;
+       background: #fff; transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease; }
+.box .nm { font-weight: 700; font-size: .95rem; }
+.box .meta { font-size: .76rem; color: var(--muted); margin-top: 1px; line-height: 1.25; }
+.box.pending { border-style: dashed; opacity: .45; }
+.box.src { border-color: var(--blue); background: var(--blueBg); }
+.box.obj { border-color: var(--purple); background: var(--purpleBg); }
+.box.exe { border-color: var(--green); background: var(--greenBg); }
+.box.active { box-shadow: 0 0 0 4px rgba(230,126,34,.25); border-color: var(--orange); }
+.box.bad { border-color: var(--red); background: var(--redBg); }
+.arrow { color: var(--muted); font-size: 1.3rem; line-height: 1; }
+
+.side { display: flex; flex-direction: column; gap: 12px; min-height: 300px; }
+.card { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; background: #fff; }
+.card h3 { margin: 0 0 .45rem; font-size: 1.15rem; }
+.card p { margin: .35rem 0; line-height: 1.5; font-size: 1.05rem; }
+.card .blist { margin: .3rem 0 0; padding-left: 1.15rem; }
+/* The bullets ARE the explanation, so they get read from the back of the room:
+   1.1rem, same as the THIS STEP pill. The heading stays a step above them so it
+   still leads. Prose is not an option here -- see build_steppers.py --check,
+   which fails a card paragraph long enough to be a paragraph. */
+.card .blist li { margin: .38rem 0; line-height: 1.5; font-size: 1.1rem; }
+.card.deeper .blist li { font-size: 1rem; }
+.termwrap { border-radius: 9px; overflow: hidden; }
+.termwrap .tlabel { background: #11151c; color: #7d8795; padding: 5px 12px;
+                    font-family: Consolas, "SF Mono", Menlo, monospace;
+                    font-size: .76rem; font-weight: 700; letter-spacing: .08em; }
+.term { background: #1e2430; color: #e6e9ef; padding: 12px 14px;
+        font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 1.2rem;
+        line-height: 1.55; white-space: pre-wrap; min-height: 104px;
+        overflow-x: auto; }
+.term .cmd { color: #8fd4ff; }
+.term .err { color: #ff9a8f; }
+.term .ok  { color: #9ae6a4; }
+.term .dim { color: #9aa4b2; }
+
+/* Code panel. Catppuccin Mocha, the same look and size as the CS 2420
+   steppers, so a student moving between courses sees one thing. */
+.codebox { --code-bg:#1e1e2e; --code-fg:#cdd6f4; --code-hit:#45475a;
+           border-radius: 8px; overflow: hidden; background: var(--code-bg); }
+.codebox .fn { background: #181825; color: #9399b2; padding: 6px 11px;
+               font-weight: 700; font-size: .78rem;
+               font-family: Consolas, "SF Mono", Menlo, monospace;
+               border-bottom: 1px solid #313244; }
+/* overflow-x here, not on the pane: a long line scrolls inside the code box
+   rather than widening the column and squeezing the terminal. */
+.codebox .body { padding: .6rem 0; overflow-x: auto; color: var(--code-fg);
+                 font-family: Consolas, "Courier New", monospace;
+                 font-size: 1.35rem; line-height: 1.6; }
+.codebox .ln { padding: 0 .8rem; white-space: pre; }
+.codebox .ln.hl { background: var(--code-hit); }
+.codebox .ln.hl::before { content: "\25B8 "; color: #f9e2af; }
+.codebox .ln:not(.hl)::before { content: "  "; }
+/* Catppuccin Mocha token colours */
+.codebox .c-com { color:#6c7086; font-style: italic; }
+.codebox .c-str { color:#a6e3a1; }
+.codebox .c-kw  { color:#cba6f7; }
+.codebox .c-typ { color:#89b4fa; }
+.codebox .c-num { color:#fab387; }
+.codebox .c-pre { color:#f5c2e7; }
+
+/* THIS STEP, inline on the executing row. Keeping it on the same line as the
+   code it describes is the whole point: nothing to look back and forth
+   between. Nothing else in the panel has a light background, which is what
+   makes it unmistakable. */
+.codebox .ln.hl { display: flex; align-items: center; flex-wrap: wrap; }
+.codebox .ln.hl .src { white-space: pre; padding-right: 1.6rem; }
+.codebox .calc { background: #f9e2af; color: #1e1e2e; font-weight: 600;
+                 white-space: pre-wrap; border-radius: 5px;
+                 padding: .1rem .75rem; font-size: 1.1rem; }
+.codebox .calc::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800;
+                         letter-spacing: .06em; color: #4a3600;
+                         background: rgba(0,0,0,.10); border-radius: 3px;
+                         padding: .08rem .4rem; margin-right: .55rem; }
+.codebox .calc code { background: rgba(0,0,0,.09); border-radius: 3px;
+                      padding: .02em .28em; font-size: .95em; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 0;
+          color: var(--muted); font-size: .82rem; }
+.legend i { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line);
+            border-radius: 4px; vertical-align: -2px; margin-right: 5px; }
+table.cmp { border-collapse: collapse; width: 100%; font-size: .9rem; }
+table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.cmp th { background: #f2f4f7; }
+.tag { font-weight: 700; }
+.tag.okT { color: var(--green); } .tag.badT { color: var(--red); }
+.card.deeper { border-left: 4px solid var(--blue); background: #f7fbfe; }
+.card.deeper h3 { color: #1b5e8a; font-size: 1.02rem; }
+.card.deeper p { font-size: .93rem; }
+.card.action { border: 2px solid var(--green); background: var(--greenBg); }
+.card.action h3 { color: #1c7e45; }
+.card.action .where { font-family: Consolas, "SF Mono", Menlo, monospace;
+                      font-size: .86rem; background: #fff; border: 1px solid #bfe3c9;
+                      border-radius: 6px; padding: 6px 9px; display: inline-block;
+                      margin: .3rem 0; }
+.selftest { margin-top: 18px; font-size: .84rem; color: var(--muted); }
+/* /@stepper:css */
+</style>
+<style>
+/* This stepper only. Rules the shared template does not carry.
+   The template is stamped in above by scripts/build_steppers.py
+   and must not be edited here.
+
+   @media blocks are kept WHOLE on purpose: flattening one is how
+   a narrow-screen single-column fallback ended up applying on
+   every screen and stacked the panes. */
+header.hd { background: linear-gradient(135deg,#1e2430 0%,#2c3e50 50%,#34495e 100%); color: #fff; border-radius: 12px; padding: 1.4rem 1.7rem 1.2rem; }
+header.hd .crumb { font-size: .74rem; opacity: .85; }
+header.hd h1 { font-size: 1.5rem; margin: .35rem 0 .3rem; }
+header.hd p { margin: 0; font-size: .93rem; opacity: .93; }
+#tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 .75rem; }
+#tabs button { font: inherit; font-size: .88rem; padding: .5rem .85rem; cursor: pointer; border: 1px solid var(--line); background: #fff; border-radius: 8px; color: var(--ink); }
+#tabs button[aria-selected="true"] { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
+.bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .5rem .7rem; margin-bottom: .85rem; }
+.bar button { font: inherit; font-size: .85rem; padding: .4rem .8rem; cursor: pointer; border: 1px solid var(--line); background: #fff; border-radius: 6px; }
+.bar button:disabled { opacity: .4; cursor: default; }
+.bar .count { font-size: .83rem; color: var(--dim); margin-left: auto; }
+.todo { font-size: .83rem; color: var(--amber); background: #fff8e1; border: 1px solid #e8d9a8; border-radius: 6px; padding: .25rem .55rem; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+.card p:last-child { margin-bottom: 0; }
+pre.code { background: var(--dark); color: var(--code); border-radius: 8px; padding: .75rem .9rem; margin: 0; overflow-x: auto; font-family: Consolas, Menlo, monospace; font-size: .86rem; line-height: 1.6; }
+pre.code .ln { color: #6b7a90; margin-right: .75rem; user-select: none; }
+pre.code .on { background: rgba(249,226,175,.17); display: block; border-left: 3px solid var(--hl); margin-left: -.9rem; padding-left: calc(.9rem - 3px); }
+.out { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .7rem .8rem; overflow-x: auto; font-family: Consolas, Menlo, monospace; font-size: .95rem; line-height: 1.75; }
+.out .row { white-space: pre; }
+.out .pad { color: #c3ccda; }
+.out .ch { color: var(--ink); }
+.out .ruler { white-space: pre; color: var(--dim); font-size: .78rem; border-bottom: 1px dashed var(--line); padding-bottom: .2rem; margin-bottom: .3rem; }
+.out .bad { color: var(--red); font-weight: 700; }
+.term .warn { color: #f0b46a; }
+.action { margin-top: .85rem; background: #f2f8f4; border-left: 5px solid var(--green); border-radius: 8px; padding: .75rem .95rem; font-size: .92rem; }
+.action strong { color: var(--green); }
+code { background: #eef1f6; padding: .05rem .3rem; border-radius: 4px; font-family: Consolas, Menlo, monospace; font-size: .92em; }
 </style>
 </head>
 <body>
@@ -103,8 +259,8 @@
 
   <header class="hd">
     <div class="crumb">CS 1410 &middot; Module 1 &middot; Step Through</div>
-    <h1>Lining Up Columns with <code style="color:#f9e2af">setw</code></h1>
-    <p>Five tabs. Every space is drawn, because the spaces are the whole lesson.</p>
+    <h1>Lining up columns with <code style="color:#f9e2af">setw</code></h1>
+    <p>Four tabs, for CT 1 Part 5. Every space is drawn, because the spaces are the whole lesson.</p>
   </header>
 
   <div id="tabs" role="tablist"></div>
@@ -150,21 +306,37 @@ var MODES = {
     label: "1. One field",
     frames: [
       f({ title: "setw reserves room",
-          body: "<code>std::setw(10)</code> says: whatever comes next, print it in a field ten characters wide. &ldquo;Coffee&rdquo; is six characters, so C++ adds four spaces to make up the difference &mdash; and by default it puts them <em>before</em> the text.",
+          body: [
+            "<code>std::setw(10)</code>: print the <em>next</em> item in a field ten characters wide",
+            "&ldquo;Coffee&rdquo; is six characters, so C++ adds four spaces",
+            "By default the padding goes <strong>before</strong> the text",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::setw(10) << "Coffee" << "|\\n";'
           ], hl: 0 },
           out: ["    Coffee|"], width: 10,
           term: [["cmd", "$ ./build/receipt"], ["", "    Coffee|"]] }),
       f({ title: "Change the number, change the gap",
-          body: "Same string, wider field. The text did not move <em>relative to the right edge</em> &mdash; the padding grew to fill the extra room. This is why a column of prices lines up on the right without you counting anything.",
+          body: [
+            "Same string, wider field",
+            "The text did not move relative to the <strong>right edge</strong> &mdash; the padding grew",
+            "This is why a column lines up without you counting anything",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::setw(14) << "Coffee" << "|\\n";'
           ], hl: 0 },
           out: ["        Coffee|"], width: 14,
           term: [["cmd", "$ ./build/receipt"], ["", "        Coffee|"]] }),
       f({ title: "setw never cuts anything off",
-          body: "&ldquo;Espresso&rdquo; is eight characters in a field of four. C++ does <strong>not</strong> truncate it &mdash; <code>setw</code> is a <em>minimum</em>, not a maximum. Your column silently gets wider than planned, which is how one long product name knocks a whole receipt out of line.",
+          body: [
+            "&ldquo;Espresso&rdquo; is eight characters in a field of four",
+            "C++ does <strong>not</strong> truncate it",
+            "<code>setw</code> is a <em>minimum</em>, never a maximum",
+            "One long value silently widens the column and knocks the table out of line",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::setw(4) << "Espresso" << "|\\n";'
           ], hl: 0 },
@@ -181,7 +353,11 @@ var MODES = {
     label: "2. It only applies once",
     frames: [
       f({ title: "One setw, two columns",
-          body: "This looks like it should produce two neat columns. Watch what the second one does.",
+          body: [
+            "This looks like it should produce two neat columns",
+            "Watch what the second one does",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::setw(12) << "Coffee"',
             '          << "3.50" << "\\n";',
@@ -191,7 +367,12 @@ var MODES = {
           out: [], width: 12,
           term: [["cmd", "$ ./build/receipt"], ["dim", "# nothing printed yet"]] }),
       f({ title: "The first column is fine",
-          body: "Both names sit in a twelve-wide field, right-aligned, so each price begins at character 13. That part was never the problem.",
+          body: [
+            "Both names sit in a twelve-wide field, right-aligned",
+            "Each price therefore begins at character 13",
+            "That part was never the problem",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::setw(12) << "Coffee"',
             '          << "3.50" << "\\n";',
@@ -201,7 +382,14 @@ var MODES = {
           out: ["      Coffee3.50"], width: 12,
           term: [["cmd", "$ ./build/receipt"], ["", "      Coffee3.50"]] }),
       f({ title: "And the prices do not line up",
-          body: "<strong><code>setw</code> applies to the <em>next item only</em>.</strong> It was used up by the name, so the price printed with no field at all. Notice what is and is not broken: the prices still <em>start</em> in the same place, because the name field is a fixed twelve wide. What is ragged is their <strong>right-hand edge</strong> &mdash; <code>12.00</code> is one character wider than <code>3.50</code> and nothing reserved room for it. On a receipt, the right edge is the one that matters.",
+          body: [
+            "<strong><code>setw</code> applies to the next item only</strong>",
+            "The name used it up, so the price printed with no field at all",
+            "The prices still <em>start</em> in the same place &mdash; the name field is a fixed twelve wide",
+            "What is ragged is the <strong>right edge</strong>: <code>12.00</code> is wider than <code>3.50</code>",
+            "On a table of numbers, the right edge is the one that matters",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::setw(12) << "Coffee"',
             '          << "3.50" << "\\n";',
@@ -213,7 +401,12 @@ var MODES = {
                  ["", "         Tea12.00"],
                  ["warn", "# look at the RIGHT edge, not the left: 3.50 and 12.00 do not line up"]] }),
       f({ title: "Say it again for every field",
-          body: "One <code>setw</code> per column. Now both lines are the same length and the prices form a real column. If you remember one thing from this stepper, it is that <code>setw</code> is not sticky.",
+          body: [
+            "One <code>setw</code> per column",
+            "Both lines are the same length now, and the numbers form a real column",
+            "If you remember one thing: <code>setw</code> is <strong>not sticky</strong>",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::setw(12) << "Coffee"',
             '          << std::setw(8) << "3.50" << "\\n";',
@@ -234,7 +427,11 @@ var MODES = {
     label: "3. Left or right",
     frames: [
       f({ title: "Right is the default",
-          body: "Numbers belong on the right, so their digits line up by place value. That is what <code>setw</code> already does without being asked.",
+          body: [
+            "Numbers belong on the right, so their digits line up by place value",
+            "<code>setw</code> already does this without being asked",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::setw(8) << "3.50"  << "|\\n";',
             'std::cout << std::setw(8) << "12.00" << "|\\n";'
@@ -243,7 +440,12 @@ var MODES = {
           term: [["cmd", "$ ./build/receipt"], ["", "    3.50|"], ["", "   12.00|"],
                  ["dim", "# decimal points line up"]] }),
       f({ title: "std::left moves the padding",
-          body: "Names read better flush left, so the padding goes <em>after</em> the text instead. <code>std::left</code> is a switch, not a one-shot &mdash; unlike <code>setw</code>, it stays on until you change it.",
+          body: [
+            "Names read better flush left, so the padding goes <em>after</em> the text",
+            "<code>std::left</code> is a switch, not a one-shot",
+            "It stays on until you change it &mdash; unlike <code>setw</code>",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::left',
             '          << std::setw(12) << "Coffee" << "|\\n";',
@@ -254,7 +456,12 @@ var MODES = {
                  ["", "Espresso    |"],
                  ["dim", "# one std::left, both lines affected"]] }),
       f({ title: "One line, both directions",
-          body: "A receipt line wants the name left and the price right, so you flip back to <code>std::right</code> partway along. Two switches, one line, and the result is a table.",
+          body: [
+            "A line can want the name left and the number right",
+            "Flip back to <code>std::right</code> partway along",
+            "Two switches, one line, and the result is a table",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::left  << std::setw(12) << "Coffee"',
             '          << std::right << std::setw(8)  << "3.50"',
@@ -272,7 +479,12 @@ var MODES = {
     label: "4. Money",
     frames: [
       f({ title: "A double prints as little as it can",
-          body: "These are prices, but C++ has no idea of that. <code>3.5</code> is a number, and the default is to print it in the shortest form that is still accurate &mdash; so a price loses its trailing zero and your column loses its decimal point.",
+          body: [
+            "These are prices, but C++ has no idea of that",
+            "<code>3.5</code> is just a number",
+            "The default is the shortest accurate form &mdash; so the trailing zero goes, and the decimal point with it",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'double price{3.5};',
             'std::cout << price << "\\n";'
@@ -281,7 +493,12 @@ var MODES = {
           term: [["cmd", "$ ./build/receipt"], ["", "3.5"],
                  ["warn", "# not 3.50 -- this is a price with one decimal place"]] }),
       f({ title: "fixed and setprecision together",
-          body: "<code>std::fixed</code> says &ldquo;always use decimal places, never scientific notation&rdquo;, and <code>std::setprecision(2)</code> says how many. You need both: <code>setprecision</code> alone counts <em>significant digits</em>, not decimals.",
+          body: [
+            "<code>std::fixed</code>: always decimal places, never scientific notation",
+            "<code>std::setprecision(2)</code>: how many places",
+            "You need both &mdash; <code>setprecision</code> alone counts <em>significant digits</em>, not decimals",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'double price{3.5};',
             'std::cout << std::fixed << std::setprecision(2)',
@@ -290,7 +507,13 @@ var MODES = {
           out: ["3.50"], width: 0,
           term: [["cmd", "$ ./build/receipt"], ["", "3.50"]] }),
       f({ title: "This one IS sticky",
-          body: "The second price never mentions <code>setprecision</code> and still prints two decimals. <code>std::fixed</code> and <code>setprecision</code> change the stream until something changes them back &mdash; the exact opposite of <code>setw</code>, which lasts one item. Two things that look alike in the code and behave differently.",
+          body: [
+            "The second price never mentions <code>setprecision</code> and still prints two decimals",
+            "<code>std::fixed</code> and <code>setprecision</code> change the stream until something changes them back",
+            "The exact opposite of <code>setw</code>, which lasts one item",
+            "Two things that look alike in the code and behave differently",
+          ],
+          todo: "Part 5 &mdash; <code>src/basics.cpp</code>, <code>printTimesTable</code>",
           code: { lines: [
             'std::cout << std::fixed << std::setprecision(2)',
             '          << 3.5 << "\\n";',
@@ -305,61 +528,13 @@ var MODES = {
   },
 
   // --- 5 ------------------------------------------------------------------
-  receipt: {
-    label: "5. The whole receipt",
-    frames: [
-      f({ title: "Constants first",
-          body: "The widths are named, in one place. Change <code>NAME_WIDTH</code> and every line moves together &mdash; that is Module 1's point about named constants, and it is the reason the Lab is graded on the widths matching rather than on any particular number.",
-          code: { lines: [
-            'constexpr int NAME_WIDTH{14};',
-            'constexpr int PRICE_WIDTH{8};'
-          ], hl: 0 },
-          out: [], width: 22,
-          term: [["dim", "# nothing printed yet -- just the two numbers that decide everything"]] }),
-      f({ title: "The header",
-          body: "Same two widths, same two alignments. The header is a receipt line that happens to contain words instead of money.",
-          code: { lines: [
-            'std::cout << std::left  << std::setw(NAME_WIDTH)  << "Item"',
-            '          << std::right << std::setw(PRICE_WIDTH) << "Price"',
-            '          << "\\n";'
-          ], hl: 0 },
-          out: ["Item             Price"], width: 22,
-          term: [["cmd", "$ ./build/receipt"], ["", "Item             Price"]] }),
-      f({ title: "Two items",
-          body: "Every line is 22 characters, because every line uses the same two widths. Nothing here counts spaces by hand.",
-          code: { lines: [
-            'printLine("Coffee",   3.50);',
-            'printLine("Espresso", 2.75);'
-          ], hl: 1 },
-          out: ["Item             Price", "Coffee            3.50", "Espresso          2.75"],
-          width: 22,
-          term: [["cmd", "$ ./build/receipt"], ["", "Item             Price"],
-                 ["", "Coffee            3.50"], ["", "Espresso          2.75"]] }),
-      f({ title: "And the total",
-          body: "A rule line and a total, on the same grid. If your widths are named and every column has its own <code>setw</code>, the total lines up for free &mdash; and the scorecard checks exactly that.",
-          code: { lines: [
-            'std::cout << std::string(NAME_WIDTH + PRICE_WIDTH, \'-\') << "\\n";',
-            'printLine("TOTAL", 6.25);'
-          ], hl: 1 },
-          out: ["Item             Price", "Coffee            3.50",
-                "Espresso          2.75", "----------------------", "TOTAL             6.25"],
-          width: 22,
-          term: [["cmd", "$ ./build/receipt"], ["", "Item             Price"],
-                 ["", "Coffee            3.50"], ["", "Espresso          2.75"],
-                 ["", "----------------------"], ["", "TOTAL             6.25"],
-                 ["cmd", "$ python3 tests/scorecard.py"],
-                 ["dim", "# the column test passes when every line is the same width"]],
-          action: { do: "Build the header, the items, the rule and the total on one pair of widths",
-                    where: "src/receipt.cpp &mdash; all four TODOs" } })
-    ]
-  }
 };
 
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
 
-var ORDER = ["field", "once", "align", "money", "receipt"];
+var ORDER = ["field", "once", "align", "money"];
 var mode = ORDER[0];
 var step = 0;
 
@@ -419,6 +594,14 @@ function render() {
   // The verifier looks for #stage .stage after every step, so this class is
   // load-bearing: without it, a rendered step reads as "rendered nothing".
   var root = el("div", "stage");
+  // Which TODO this step serves, on every step -- the device that makes CT0
+  // readable. The tabs follow the teaching; this says where you are.
+  if (fr.todo) {
+    var tb = el("div", "todobar");
+    tb.appendChild(el("span", "tag", "THIS STEP IS FOR"));
+    tb.appendChild(el("span", "what", fr.todo));
+    root.appendChild(tb);
+  }
   var grid = el("div", "grid");
 
   var left = el("div", "card");
@@ -432,9 +615,17 @@ function render() {
 
   var right = el("div", "card");
   right.appendChild(el("h3", null, fr.title));
-  var body = el("p");
-  body.innerHTML = fr.body;
-  right.appendChild(body);
+  // Bullets, never a paragraph: this is read off a projector from the back of
+  // the room. See templates/stepper/README.md.
+  if (Array.isArray(fr.body)) {
+    var ul = el("ul", "blist");
+    fr.body.forEach(function (b) { ul.appendChild(el("li", null, b)); });
+    right.appendChild(ul);
+  } else {
+    var body = el("p");
+    body.innerHTML = fr.body;
+    right.appendChild(body);
+  }
   var o = el("div", "out");
   o.innerHTML = rulerRow(fr.width) +
                 (fr.out.length ? fr.out.map(outRow).join("")
@@ -499,7 +690,7 @@ document.getElementById("last").addEventListener("click", function () {
   function ok(cond, msg) { if (!cond) fails.push(msg); }
   function width(s) { return s.length; }
 
-  ok(ORDER.length === 5, "expected five tabs");
+  ok(ORDER.length === 4, "expected four tabs");
   ORDER.forEach(function (m) {
     ok(!!MODES[m], m + ": tab missing from MODES");
     var fs = (MODES[m] || {}).frames || [];
@@ -546,12 +737,10 @@ document.getElementById("last").addEventListener("click", function () {
      /\.\d\d$/.test(sticky.out[0]) && /\.\d\d$/.test(sticky.out[1]),
      "tab 4: the sticky frame must show two lines both at two decimals");
 
-  // Tab 5: every line of the finished receipt is the same width, which is
-  // exactly what the Lab's scorecard checks.
-  var done = MODES.receipt.frames[3];
-  var widths = done.out.map(width);
-  ok(widths.every(function (w) { return w === widths[0]; }),
-     "tab 5: the finished receipt must have every line the same width");
+  // There was a fifth tab here that walked the finished receipt line by line.
+  // It was removed when this stepper moved from the Lab 1 repo to CT 1's: it
+  // was the Lab's answer, and these publish to a public URL. The teaching it
+  // carried -- named widths, one setw per column -- is in tabs 1 and 2.
 
   var node = document.getElementById("selftest");
   if (!fails.length) { node.style.display = "none"; return; }
