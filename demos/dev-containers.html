@@ -311,12 +311,16 @@ var MODES = {
                  ["ok", "  Engine running"]],
           title: "Docker Desktop is the engine, not the container",
           body: ["It has to be <strong>running</strong> before VS Code can build anything",
-                 "By itself it does nothing to your project",
-                 "Think of it as the power supply the container plugs into"],
+                 "By itself it does nothing to your project &mdash; it is the power supply the container plugs into",
+                 "On Linux you may have <strong>Docker Engine</strong> with no Desktop app and no tray icon &mdash; that is fine"],
           more: ["If you only remember one troubleshooting step, make it this one",
                  "Most week-one failures are Docker Desktop simply not started"],
-          action: { do: "Start Docker Desktop and wait for the whale icon to stop animating.",
-                    where: "Windows: Start menu \u2192 Docker Desktop" } })
+          action: { do: "Start Docker and wait until it reports that it is running. Then confirm it from a terminal \u2014 docker info answers the same way on all three systems.",
+                    where: "Windows &nbsp;&nbsp; Start menu \u2192 Docker Desktop<br>" +
+                           "macOS &nbsp;&nbsp;&nbsp;&nbsp; Applications \u2192 Docker, or:  open -a Docker<br>" +
+                           "Linux &nbsp;&nbsp;&nbsp;&nbsp; Docker Desktop, or Engine on its own:<br>" +
+                           "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sudo systemctl start docker<br>" +
+                           "<br>check it &nbsp;&nbsp; docker info" } })
     ]
   },
 
