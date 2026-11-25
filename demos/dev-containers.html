@@ -599,9 +599,18 @@ function render() {
   document.getElementById("frameCount").textContent =
     MODES[state.mode].label + "  -  step " + (state.i + 1) +
     " of " + frames().length;
+  // Enabled while there is anywhere left to go -- including the next tab.
+  // A greyed-out Next beside an arrow key that still works would be a lie
+  // about where the end is.
+  var btns = tabBtns(), at = -1;
+  btns.forEach(function (b, n) {
+    if (b.getAttribute("data-mode") === state.mode) at = n;
+  });
+  var atStart = state.i === 0 && at <= 0;
+  var atEnd = state.i >= frames().length - 1 && at >= btns.length - 1;
   document.getElementById("first").disabled = state.i === 0;
-  document.getElementById("prev").disabled  = state.i === 0;
-  document.getElementById("next").disabled  = state.i >= frames().length - 1;
+  document.getElementById("prev").disabled  = atStart;
+  document.getElementById("next").disabled  = atEnd;
   document.getElementById("last").disabled  = state.i >= frames().length - 1;
 }
 
@@ -625,8 +634,8 @@ function play() {
 }
 
 document.getElementById("first").addEventListener("click", function () { stop(); go(0); });
-document.getElementById("prev").addEventListener("click",  function () { stop(); go(state.i - 1); });
-document.getElementById("next").addEventListener("click",  function () { stop(); go(state.i + 1); });
+document.getElementById("prev").addEventListener("click",  function () { advance(-1); });
+document.getElementById("next").addEventListener("click",  function () { advance(1); });
 document.getElementById("last").addEventListener("click",  function () { stop(); go(frames().length - 1); });
 document.getElementById("play").addEventListener("click", play);
 
@@ -642,9 +651,51 @@ Array.prototype.forEach.call(document.querySelectorAll("#tabs [data-mode]"), fun
   });
 });
 
+/* Run off the end of a tab and into the next one.
+ *
+ * Presenting means holding the right arrow and talking. Stopping dead on the
+ * last step of every tab breaks that: you have to look down, find the mouse,
+ * and click the next tab in front of the room. So the arrows treat the whole
+ * stepper as one sequence -- past the last step is the next tab's first step,
+ * before the first is the previous tab's last.
+ *
+ * Tab order comes from the DOM rather than a list, so it cannot drift from the
+ * buttons the student actually sees.
+ */
+function tabBtns() {
+  return Array.prototype.slice.call(
+    document.querySelectorAll("#tabs [data-mode]"));
+}
+
+function showTab(btn, atEnd) {
+  state.mode = btn.getAttribute("data-mode");
+  tabBtns().forEach(function (o) {
+    o.setAttribute("aria-selected", String(o === btn));
+  });
+  state.i = 0;
+  if (atEnd) state.i = Math.max(0, frames().length - 1);
+  render();
+}
+
+function advance(delta) {
+  stop();
+  var next = state.i + delta;
+  if (next >= 0 && next < frames().length) { go(next); return; }
+  var btns = tabBtns();
+  var at = -1;
+  btns.forEach(function (b, n) {
+    if (b.getAttribute("data-mode") === state.mode) at = n;
+  });
+  var to = at + delta;
+  // The two real ends of the deck: stay put rather than wrap, so a held key
+  // cannot silently cycle back to the beginning mid-explanation.
+  if (at < 0 || to < 0 || to >= btns.length) return;
+  showTab(btns[to], delta < 0);
+}
+
 document.addEventListener("keydown", function (e) {
-  if (e.key === "ArrowRight") { stop(); go(state.i + 1); e.preventDefault(); }
-  else if (e.key === "ArrowLeft") { stop(); go(state.i - 1); e.preventDefault(); }
+  if (e.key === "ArrowRight") { advance(1); e.preventDefault(); }
+  else if (e.key === "ArrowLeft") { advance(-1); e.preventDefault(); }
   else if (e.key === " ") { play(); e.preventDefault(); }
 });
 

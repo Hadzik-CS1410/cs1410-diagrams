@@ -648,8 +648,13 @@ function render() {
     "step " + (step + 1) + " of " + frames.length;
   document.getElementById("todo").innerHTML =
     fr.action ? "ends at a TODO" : MODES[mode].label;
-  document.getElementById("prev").disabled = (step === 0);
-  document.getElementById("next").disabled = (step === frames.length - 1);
+  // Enabled while there is anywhere left to go, including the next tab. A
+  // greyed-out Next beside an arrow key that still works is a lie about where
+  // the end is.
+  var atTab = ORDER.indexOf(mode);
+  document.getElementById("prev").disabled = (step === 0 && atTab <= 0);
+  document.getElementById("next").disabled =
+    (step === frames.length - 1 && atTab >= ORDER.length - 1);
   document.getElementById("last").disabled = (step === frames.length - 1);
 
   var tabs = document.querySelectorAll("#tabs [data-mode]");
@@ -673,8 +678,39 @@ function buildTabs() {
 }
 
 buildTabs();
-document.getElementById("prev").addEventListener("click", function () { step--; render(); });
-document.getElementById("next").addEventListener("click", function () { step++; render(); });
+/* Run off the end of a tab and into the next one.
+ *
+ * Presenting means holding the right arrow and talking. Stopping dead on the
+ * last step of every tab breaks that: you have to look down, find the mouse,
+ * and click the next tab in front of the room. The arrows treat the whole
+ * stepper as one sequence.
+ *
+ * This stepper has its own engine (mode/step rather than state.mode/state.i),
+ * so the logic is written out again here. That duplication is the argument
+ * for extracting the engine into templates/stepper/ the way the CSS already
+ * is -- noted, not done.
+ */
+function advance(delta) {
+  var t = step + delta;
+  if (t >= 0 && t < MODES[mode].frames.length) { step = t; render(); return; }
+  var at = ORDER.indexOf(mode), to = at + delta;
+  // The two real ends of the deck: stay put rather than wrap, so a held key
+  // cannot silently cycle back to the beginning mid-explanation.
+  if (at < 0 || to < 0 || to >= ORDER.length) return;
+  mode = ORDER[to];
+  step = delta < 0 ? MODES[mode].frames.length - 1 : 0;
+  render();                       // render() owns the tab highlight
+}
+
+document.getElementById("prev").addEventListener("click", function () { advance(-1); });
+document.getElementById("next").addEventListener("click", function () { advance(1); });
+
+// This stepper shipped with no keyboard navigation at all, which only showed
+// up once the arrow keys were given something new to do.
+document.addEventListener("keydown", function (e) {
+  if (e.key === "ArrowRight") { advance(1); e.preventDefault(); }
+  else if (e.key === "ArrowLeft") { advance(-1); e.preventDefault(); }
+});
 document.getElementById("last").addEventListener("click", function () {
   step = MODES[mode].frames.length - 1; render();
 });
