@@ -233,7 +233,9 @@ table.cmp th { background: #f2f4f7; }
     <button data-mode="ok">3 &middot; How a build works</button>
     <button data-mode="compile">4 &middot; Compiler error</button>
     <button data-mode="link">5 &middot; Linker error</button>
-    <button data-mode="compare">6 &middot; Compare</button>
+    <button data-mode="cmake">6 &middot; What CMake does</button>
+    <button data-mode="rebuild">7 &middot; Change one file</button>
+    <button data-mode="compare">8 &middot; Compare</button>
     <span class="spacer"></span>
     <span class="hint">&larr; &rarr; arrow keys step &middot; space plays</span>
   </div>
@@ -825,6 +827,93 @@ var MODES = {
                     where: "src/greeting.cpp   -->   all four lines of greeting()",
                     note: "Undo it when you have read the error, then carry on to <strong>Part 3</strong> in <code>main.cpp</code> (TODO 3a&ndash;3c)." } })
     ]
+  },
+
+  cmake: {
+    label: "6 · What CMake does", cmake: true,
+    frames: [
+      f({ todo: "Under the Hood &mdash; the two commands you already type",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok", "build/Makefile":"pending", "build/CMakeCache.txt":"pending",
+                   "main.o":"pending", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
+          active: "main.cpp",
+          term: [["cmd","$ ls build"],
+                 ["err","ls: cannot access 'build': No such file or directory"]],
+          title: "There is no build folder yet",
+          body: ["Your three source files are all that exist",
+                 "<code>build/</code> is not in the repo and never is &mdash; it is gitignored",
+                 "Everything below the top row is about to be generated"] }),
+
+      f({ todo: "Under the Hood &mdash; the two commands you already type",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok", "build/Makefile":"ok", "build/CMakeCache.txt":"ok",
+                   "main.o":"pending", "greeting.o":"pending", "ct0-hello-cpp":"pending" },
+          active: "build/Makefile",
+          term: [["cmd","$ cmake --preset default"],
+                 ["dim","  reading CMakeLists.txt and CMakePresets.json ..."],
+                 ["ok","  -- Build files have been written to: ./build"]],
+          title: "Configure writes the recipe, and compiles nothing",
+          body: ["CMake read <code>CMakeLists.txt</code> and wrote <code>build/Makefile</code>",
+                 "<strong>Not one line of C++ was compiled</strong> &mdash; look at the object row, still empty",
+                 "People think this is the build. It is the step that <em>plans</em> the build"],
+          more: ["<code>CMakeCache.txt</code> remembers your compiler and settings, so later runs are fast",
+                 "Delete <code>build/</code> and you lose only generated files, never your code",
+                 "That is why the first configure is slow and the rest are not"] }),
+
+      f({ todo: "Under the Hood &mdash; the two commands you already type",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok", "build/Makefile":"ok", "build/CMakeCache.txt":"ok",
+                   "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"ok" },
+          active: "ct0-hello-cpp",
+          term: [["cmd","$ cmake --build build"],
+                 ["dim","  Building CXX object main.cpp.o"],
+                 ["dim","  Building CXX object greeting.cpp.o"],
+                 ["ok","  Linking CXX executable ct0-hello-cpp"]],
+          title: "Build is the step that runs the compiler",
+          body: ["Now the compiler runs, once per <code>.cpp</code>, and then the linker",
+                 "Exactly the three stages from tab 3 &mdash; CMake just drove them",
+                 "You never typed <code>g++</code>, and you never will in this course"],
+          action: { do: "Run both commands and watch the build folder appear.",
+                    where: "cmake --preset default && cmake --build build" } })
+    ]
+  },
+
+  rebuild: {
+    label: "7 · Change one file", cmake: true,
+    frames: [
+      f({ todo: "Under the Hood &mdash; the two commands you already type",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok", "build/Makefile":"ok", "build/CMakeCache.txt":"ok",
+                   "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"ok" },
+          active: "ct0-hello-cpp",
+          term: [["cmd","$ cmake --build build"],
+                 ["ok","  ninja: no work to do."]],
+          title: "Nothing changed, so nothing rebuilds",
+          body: ["Everything is already up to date",
+                 "CMake compares timestamps and does the least work it can",
+                 "Running the build twice in a row costs you nothing"] }),
+
+      f({ todo: "Under the Hood &mdash; the two commands you already type",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok", "build/Makefile":"ok", "build/CMakeCache.txt":"ok",
+                   "main.o":"ok", "greeting.o":"bad", "ct0-hello-cpp":"bad" },
+          active: "greeting.cpp",
+          term: [["cmd","$ # you edit src/greeting.cpp"],
+                 ["dim","  greeting.cpp is now newer than greeting.o"]],
+          title: "You change one file",
+          body: ["<code>greeting.o</code> is <strong>stale</strong> &mdash; built from the old text",
+                 "The executable is stale too, because it contains that object",
+                 "<code>main.o</code> is untouched: nothing you edited affects it"] }),
+
+      f({ todo: "Under the Hood &mdash; the two commands you already type",
+          files: { "main.cpp":"ok", "greeting.cpp":"ok", "greeting.h":"ok", "build/Makefile":"ok", "build/CMakeCache.txt":"ok",
+                   "main.o":"ok", "greeting.o":"ok", "ct0-hello-cpp":"ok" },
+          active: "greeting.o",
+          term: [["cmd","$ cmake --build build"],
+                 ["dim","  Building CXX object greeting.cpp.o"],
+                 ["ok","  Linking CXX executable ct0-hello-cpp"]],
+          title: "One file changed, one file compiled",
+          body: ["Only <code>greeting.o</code> rebuilt &mdash; <code>main.cpp</code> was never re-read",
+                 "Then it relinked, because the executable is built from that object",
+                 "<strong>This is what a build system is for.</strong> At three files you barely notice; at thirty it is seconds instead of minutes"],
+          action: { do: "Edit one file, rebuild, and read the output. Only what you touched is compiled.",
+                    where: "src/greeting.cpp" } })
+    ]
   }
 };
 
@@ -836,6 +925,21 @@ var PIPE_ROWS = [
   { name: "Compiler produced", kind: "obj", items: ["main.o", "greeting.o"] },
   { name: "Linker produced", kind: "exe", items: ["ct0-hello-cpp"] }
 ];
+
+// The CMake tabs need one more row, and only they do. A mode opts in with
+// `cmake: true` rather than this being global, so the first six tabs keep the
+// diagram they have always had and no existing frame has to gain keys for
+// boxes it never mentions.
+var CMAKE_ROWS = [
+  { name: "CMake wrote", kind: "obj",
+    items: ["build/Makefile", "build/CMakeCache.txt"] }
+];
+
+function rowsFor(mode) {
+  return MODES[mode] && MODES[mode].cmake
+      ? PIPE_ROWS.slice(0, 1).concat(CMAKE_ROWS, PIPE_ROWS.slice(1))
+      : PIPE_ROWS;
+}
 
 var state = { mode: "main", i: 0, timer: null };
 
@@ -983,7 +1087,7 @@ function renderLegend() {
   var mode = MODES[state.mode];
   var only = mode.show || null;
   var shown = {};
-  PIPE_ROWS.forEach(function (row) {
+  rowsFor(state.mode).forEach(function (row) {
     row.items.forEach(function (nm) {
       if (!only || only.indexOf(nm) >= 0) shown[nm] = row.kind;
     });
@@ -1042,7 +1146,7 @@ function render() {
   // half nobody was looking at: the point of "...and this is the result" is
   // the preprocessed text.
   if (fr.noDiagram) only = [];
-  PIPE_ROWS.forEach(function (row) {
+  rowsFor(state.mode).forEach(function (row) {
     var items = only ? row.items.filter(function (nm) { return only.indexOf(nm) >= 0; })
                      : row.items;
     if (!items.length) return;
@@ -1245,7 +1349,7 @@ document.addEventListener("keydown", function (e) {
       var where = m + " frame " + (i + 1);
       ok(!!fr.title && !!fr.body, where + ": has title and body");
       ok(Array.isArray(fr.term) && fr.term.length > 0, where + ": has terminal output");
-      PIPE_ROWS.forEach(function (row) {
+      rowsFor(m).forEach(function (row) {
         row.items.forEach(function (nm) {
           ok(fr.files[nm] !== undefined, where + ": missing state for " + nm);
         });
@@ -1271,6 +1375,23 @@ document.addEventListener("keydown", function (e) {
   ok(lk.files["main.o"] === "ok" && lk.files["greeting.o"] === "ok",
      "linker tab: both object files must be ok at the failure");
   ok(lk.files["ct0-hello-cpp"] === "bad", "linker tab: the executable is what fails");
+  // Tab 6's whole point: configure writes the build files and compiles
+  // NOTHING. If an edit ever marks an object file ok on that step, the tab
+  // stops teaching the one thing people get wrong about cmake --preset.
+  var cfg = MODES.cmake.frames[1];
+  ok(cfg.files["build/Makefile"] === "ok",
+     "cmake tab: configure must produce the Makefile");
+  ok(cfg.files["main.o"] === "pending" && cfg.files["greeting.o"] === "pending",
+     "cmake tab: configure must compile nothing");
+
+  // Tab 7: main.o survives untouched while greeting.o goes stale and comes
+  // back. That contrast IS the lesson -- if both rebuild, there is no lesson.
+  var stale = MODES.rebuild.frames[1];
+  ok(stale.files["main.o"] === "ok",
+     "rebuild tab: main.o must stay untouched when greeting.cpp changes");
+  ok(stale.files["greeting.o"] === "bad" && stale.files["ct0-hello-cpp"] === "bad",
+     "rebuild tab: the edited object and the executable must both go stale");
+
   // ...and of tab 2: the failure is at compile, before any executable exists.
   var cm = MODES.compile.frames[2];
   ok(cm.files["greeting.o"] === "pending", "compiler tab: greeting.o is never produced");
