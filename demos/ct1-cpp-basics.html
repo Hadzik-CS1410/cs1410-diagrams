@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CS 1410 &middot; CT 1 &mdash; C++ basics for Python programmers</title>
+<style>
+/* @stepper:css */
+/* stepper.css -- the canonical look of every CS 1410 stepper.
+ *
+ * Do not edit this inside a stepper. Edit it HERE, then run
+ * `python scripts/build_steppers.py`, which inlines it into every stepper
+ * between its @stepper:css markers. `--check` reports drift. Same contract as
+ * templates/cpp-starter/ and sync_tooling.py, and for the same reason: there
+ * will be two steppers a week for twelve weeks, and twenty-five hand-copied
+ * copies of a 900-line file drift by the sixth one.
+ *
+ * Sizes, colours and spacing are CT0's (hello-cpp), kept deliberately: it is
+ * the one that has been shown on a projector and it reads from the back.
+ */
+
+:root {
+  --ink: #2c3e50; --muted: #5b6b7a; --line: #d7dae0; --bg: #fcfcfd;
+  --blue: #2980b9; --blueBg: #eaf2f8;
+  --purple: #8e44ad; --purpleBg: #f5eef8;
+  --green: #27ae60; --greenBg: #f0faf0;
+  --orange: #e67e22; --orangeBg: #fff3e0;
+  --red: #c0392b; --redBg: #fdecea;
+}
+* { box-sizing: border-box; }
+
+/* Reserve the scrollbar's space, always.
+ *
+ * This is the real cause of the panes shifting. When one step is short and the
+ * next is tall, the page's vertical scrollbar appears -- and the viewport
+ * instantly narrows by ~15px, so every column shifts left. It looks like the
+ * layout is moving; what moved is the window. In CT0 it happens between steps
+ * 3 and 4 of the first tab.
+ *
+ * Reserving the gutter means the scrollbar costs its width whether or not it
+ * is there, so appearing can never move anything. The @supports fallback is
+ * for engines without scrollbar-gutter, where always painting a track does
+ * the same job less elegantly.
+ *
+ * This makes the shift impossible. It does NOT make a too-tall step acceptable
+ * -- see the one-screen rule in templates/stepper/README.md, which
+ * verify_stepper.js enforces. */
+html { scrollbar-gutter: stable; }
+@supports not (scrollbar-gutter: stable) { html { overflow-y: scroll; } }
+
+/* Tight furniture. 342px of the 760px one-screen budget used to be chrome
+   before a single line of content -- padding, heading, tabs, controls,
+   legend. Trimming it buys ~74px for teaching on EVERY step of every
+   stepper, which is a better trade than cutting an explanation. */
+body { margin: 0; padding: 14px 16px 20px;
+       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+       color: var(--ink); background: #fff; }
+/* No max-width. These run the full browser width and read far better for it --
+   code, terminal and explanation side by side instead of stacked. */
+.wrap { margin: 0 auto; }
+h1 { font-size: 1.35rem; margin: 0 0 .35rem; }
+.sub { color: var(--muted); margin: 0 0 .6rem; line-height: 1.5; font-size: .9rem; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        border-bottom: 2px solid var(--line); padding-bottom: 7px; margin-bottom: 10px; }
+.tabs button { font-size: .95rem; font-weight: 600; cursor: pointer; padding: 8px 14px;
+               border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.spacer { flex: 1; }
+.hint { color: var(--muted); font-size: .85rem; }
+.panel { border: 1px solid var(--line); border-radius: 9px; background: var(--bg);
+         padding: 7px 12px; margin-bottom: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lbl { font-weight: 700; font-size: .85rem; color: var(--muted);
+       text-transform: uppercase; letter-spacing: .04em; min-width: 54px; }
+.ctl { font: inherit; cursor: pointer; padding: 6px 12px; border: 1px solid var(--line);
+       border-radius: 6px; background: #fff; color: var(--ink); }
+.ctl:disabled { opacity: .4; cursor: default; }
+.ctl.primary { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
+.count { margin-left: auto; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+
+/* Names the TODO the current step is for, on EVERY step. The hand-off card at
+   the end of a tab says "go write it"; this says "this is the one" the whole
+   way through. */
+.todobar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+           background: #fff8e1; border-left: 5px solid #8f6a00;
+           border-radius: 0 8px 8px 0; padding: .35rem .85rem; margin-bottom: 10px;
+           min-height: 40px; }
+.todobar .tag { background: #8f6a00; color: #fff; border-radius: 4px;
+                padding: .1rem .5rem; font-size: .76rem; letter-spacing: .05em; }
+.todobar .what { font-size: 1rem; }
+.todobar code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .89rem; }
+
+/* ------------------------------------------------------------------ THE SPLIT
+ * Code on the left, terminal and explanation on the right, EVENLY, and the
+ * divide does not move from step to step.
+ *
+ * It used to be `minmax(0,1.2fr) minmax(0,1fr)`, and the panes visibly shifted
+ * left and right as you stepped. Three things cause that, and all three are
+ * fixed here, because fixing only the first leaves the wobble:
+ *
+ *   1. Uneven, content-influenced columns -> both are now minmax(0,1fr),
+ *      which is an exact half each regardless of what is in them.
+ *   2. A long code line widening its own column -> the code body scrolls
+ *      horizontally inside the pane (.codebox .body) instead of growing it.
+ *   3. A pane with nothing in it on some steps collapsing and springing back
+ *      -> both panes carry a min-height, so an empty terminal still holds
+ *      its half of the stage.
+ *
+ * On a projector a layout that jumps every step costs the room its place. */
+.stage { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+         gap: 20px; align-items: start; }
+.stage > * { min-width: 0; }            /* grid children must be allowed to shrink */
+@media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
+
+.pipe { border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: #fff;
+        min-height: 300px; }
+.stageRow { display: flex; align-items: center; gap: 10px; margin: 0 0 7px; flex-wrap: wrap; }
+.stageName { font-size: .78rem; font-weight: 700; letter-spacing: .05em;
+             text-transform: uppercase; color: var(--muted); width: 100%; margin-bottom: 1px;
+             line-height: 1.2; }
+.box { border: 2px solid var(--line); border-radius: 8px; padding: 6px 12px; min-width: 128px;
+       background: #fff; transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease; }
+.box .nm { font-weight: 700; font-size: .95rem; }
+.box .meta { font-size: .76rem; color: var(--muted); margin-top: 1px; line-height: 1.25; }
+.box.pending { border-style: dashed; opacity: .45; }
+.box.src { border-color: var(--blue); background: var(--blueBg); }
+.box.obj { border-color: var(--purple); background: var(--purpleBg); }
+.box.exe { border-color: var(--green); background: var(--greenBg); }
+.box.active { box-shadow: 0 0 0 4px rgba(230,126,34,.25); border-color: var(--orange); }
+.box.bad { border-color: var(--red); background: var(--redBg); }
+.arrow { color: var(--muted); font-size: 1.3rem; line-height: 1; }
+
+.side { display: flex; flex-direction: column; gap: 12px; min-height: 300px; }
+.card { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; background: #fff; }
+.card h3 { margin: 0 0 .45rem; font-size: 1.15rem; }
+.card p { margin: .35rem 0; line-height: 1.5; font-size: 1.05rem; }
+.card .blist { margin: .3rem 0 0; padding-left: 1.15rem; }
+/* The bullets ARE the explanation, so they get read from the back of the room:
+   1.1rem, same as the THIS STEP pill. The heading stays a step above them so it
+   still leads. Prose is not an option here -- see build_steppers.py --check,
+   which fails a card paragraph long enough to be a paragraph. */
+.card .blist li { margin: .38rem 0; line-height: 1.5; font-size: 1.1rem; }
+.card.deeper .blist li { font-size: 1rem; }
+.termwrap { border-radius: 9px; overflow: hidden; }
+.termwrap .tlabel { background: #11151c; color: #7d8795; padding: 5px 12px;
+                    font-family: Consolas, "SF Mono", Menlo, monospace;
+                    font-size: .76rem; font-weight: 700; letter-spacing: .08em; }
+.term { background: #1e2430; color: #e6e9ef; padding: 12px 14px;
+        font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 1.2rem;
+        line-height: 1.55; white-space: pre-wrap; min-height: 104px;
+        overflow-x: auto; }
+.term .cmd { color: #8fd4ff; }
+.term .err { color: #ff9a8f; }
+.term .ok  { color: #9ae6a4; }
+.term .dim { color: #9aa4b2; }
+
+/* Code panel. Catppuccin Mocha, the same look and size as the CS 2420
+   steppers, so a student moving between courses sees one thing. */
+.codebox { --code-bg:#1e1e2e; --code-fg:#cdd6f4; --code-hit:#45475a;
+           border-radius: 8px; overflow: hidden; background: var(--code-bg); }
+.codebox .fn { background: #181825; color: #9399b2; padding: 6px 11px;
+               font-weight: 700; font-size: .78rem;
+               font-family: Consolas, "SF Mono", Menlo, monospace;
+               border-bottom: 1px solid #313244; }
+/* overflow-x here, not on the pane: a long line scrolls inside the code box
+   rather than widening the column and squeezing the terminal. */
+.codebox .body { padding: .6rem 0; overflow-x: auto; color: var(--code-fg);
+                 font-family: Consolas, "Courier New", monospace;
+                 font-size: 1.35rem; line-height: 1.6; }
+.codebox .ln { padding: 0 .8rem; white-space: pre; }
+.codebox .ln.hl { background: var(--code-hit); }
+.codebox .ln.hl::before { content: "\25B8 "; color: #f9e2af; }
+.codebox .ln:not(.hl)::before { content: "  "; }
+/* Catppuccin Mocha token colours */
+.codebox .c-com { color:#6c7086; font-style: italic; }
+.codebox .c-str { color:#a6e3a1; }
+.codebox .c-kw  { color:#cba6f7; }
+.codebox .c-typ { color:#89b4fa; }
+.codebox .c-num { color:#fab387; }
+.codebox .c-pre { color:#f5c2e7; }
+
+/* THIS STEP, inline on the executing row. Keeping it on the same line as the
+   code it describes is the whole point: nothing to look back and forth
+   between. Nothing else in the panel has a light background, which is what
+   makes it unmistakable. */
+.codebox .ln.hl { display: flex; align-items: center; flex-wrap: wrap; }
+.codebox .ln.hl .src { white-space: pre; padding-right: 1.6rem; }
+.codebox .calc { background: #f9e2af; color: #1e1e2e; font-weight: 600;
+                 white-space: pre-wrap; border-radius: 5px;
+                 padding: .1rem .75rem; font-size: 1.1rem; }
+.codebox .calc::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800;
+                         letter-spacing: .06em; color: #4a3600;
+                         background: rgba(0,0,0,.10); border-radius: 3px;
+                         padding: .08rem .4rem; margin-right: .55rem; }
+.codebox .calc code { background: rgba(0,0,0,.09); border-radius: 3px;
+                      padding: .02em .28em; font-size: .95em; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 0;
+          color: var(--muted); font-size: .82rem; }
+.legend i { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line);
+            border-radius: 4px; vertical-align: -2px; margin-right: 5px; }
+table.cmp { border-collapse: collapse; width: 100%; font-size: .9rem; }
+table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.cmp th { background: #f2f4f7; }
+.tag { font-weight: 700; }
+.tag.okT { color: var(--green); } .tag.badT { color: var(--red); }
+.card.deeper { border-left: 4px solid var(--blue); background: #f7fbfe; }
+.card.deeper h3 { color: #1b5e8a; font-size: 1.02rem; }
+.card.deeper p { font-size: .93rem; }
+.card.action { border: 2px solid var(--green); background: var(--greenBg); }
+.card.action h3 { color: #1c7e45; }
+.card.action .where { font-family: Consolas, "SF Mono", Menlo, monospace;
+                      font-size: .86rem; background: #fff; border: 1px solid #bfe3c9;
+                      border-radius: 6px; padding: 6px 9px; display: inline-block;
+                      margin: .3rem 0; }
+.selftest { margin-top: 18px; font-size: .84rem; color: var(--muted); }
+/* /@stepper:css */
+</style>
+<style>
+/* This stepper only. The template is stamped in above by
+   scripts/build_steppers.py and must not be edited here.
+
+   @media blocks are kept WHOLE on purpose: flattening one is how a
+   narrow-screen single-column fallback ended up applying at every width and
+   stacked the panes. */
+
+/* The Parts panel on the last tab: one row per part of CT 1, so "you are
+   here" is a picture rather than another paragraph. */
+.box.exe .meta { color: #1c7e45; }
+.box.now { border-color: var(--orange); background: var(--orangeBg); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>CT 1 &mdash; C++ basics for Python programmers</h1>
+  <p class="sub">
+    You already know how to program. Seven tabs on the places where C++ does
+    <em>not</em> behave the way Python taught you to expect. <strong>Take them in
+    order</strong> &mdash; Part 5, lining up columns, has a stepper of its own.
+  </p>
+
+  <div class="tabs" id="tabs">
+    <button data-mode="types" aria-selected="true">1 &middot; Types &amp; { }</button>
+    <button data-mode="intdiv">2 &middot; Integer division</button>
+    <button data-mode="consts">3 &middot; Constants</button>
+    <button data-mode="branch">4 &middot; if / else if</button>
+    <button data-mode="swtch">5 &middot; switch</button>
+    <button data-mode="loops">6 &middot; Loops</button>
+    <button data-mode="score">7 &middot; Score it</button>
+    <span class="spacer"></span>
+    <span class="hint">&larr; &rarr; arrow keys step &middot; space plays</span>
+  </div>
+
+  <div class="panel" id="controls">
+    <div class="row">
+      <span class="lbl">Step</span>
+      <button class="ctl" id="first">&laquo; First</button>
+      <button class="ctl" id="prev">&lsaquo; Prev</button>
+      <button class="ctl primary" id="play">&#9654; Play</button>
+      <button class="ctl" id="next">Next &rsaquo;</button>
+      <button class="ctl" id="last">Last &raquo;</button>
+      <span class="count" id="frameCount"></span>
+    </div>
+  </div>
+
+  <div id="stage"></div>
+  <div class="legend" id="legend">
+    Left: the code we type together. Right: what it actually does &mdash; including
+    the steps where it is wrong on purpose.
+  </div>
+  <div class="selftest" id="selftest"></div>
+</div>
+
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+// Every frame is a COMPLETE description of the screen at that step, never a
+// diff -- so stepping backwards is just re-rendering and no state can drift.
+//
+//   code:   { fn, lines: [...], hl: index, calc?: "inline annotation" }
+//   parts:  [ { n, what, state } ]   the last tab's panel, instead of code
+//   term:   [[class, text], ...]     cmd | err | ok | dim | ""
+//   todo / title / body (bullets) / more? / action?
+//
+// Tabs follow the TEACHING, not the TODO list -- the THIS STEP IS FOR bar is
+// what keeps "where am I" unambiguous (templates/stepper/README.md rule 3).
+// ---------------------------------------------------------------------------
+
+var TODO_P1 = "Part 1 &mdash; <code>average3</code> and <code>secondsIn</code> in <code>src/basics.cpp</code>";
+var TODO_P2 = "Part 2 &mdash; <code>withTax</code> and <code>memberPrice</code> in <code>src/basics.cpp</code>";
+var TODO_P3 = "Part 3 &mdash; <code>letterGrade</code>, <code>dayName</code>, <code>isPassing</code>";
+var TODO_P4 = "Part 4 &mdash; <code>sumOfSquares</code> and <code>digitCount</code>";
+var TODO_P5 = "Part 5 &mdash; <code>printTimesTable</code> and <code>printScoreRow</code>";
+
+function f(o) { return o; }
+
+var MODES = {
+
+  // --- 1 -------------------------------------------------------------------
+  types: {
+    label: "1 · Types & { }",
+    frames: [
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · declaring a variable", hl: 0, lines: [
+            'int count{5};',
+            'double price{19.99};',
+            "char grade{'A'};",
+            'bool passing{true};',
+            'std::string name{"Ada"};'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["", "5  19.99  A  1  Ada"],
+                 ["dim", "# a bool prints as 1, not True"]],
+          title: "A type is a promise you make once",
+          body: ["Python read the type off the value. C++ makes you write it down",
+                 "<code>char</code> is one letter in <em>single</em> quotes; <code>\"A\"</code> in doubles is a string",
+                 "<code>bool</code> is <code>true</code> / <code>false</code> &mdash; lowercase, and it prints as <code>1</code>",
+                 "The type never changes. <code>count</code> is an <code>int</code> for the rest of its life"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · why { } and not =", hl: 1, lines: [
+            'int sneaky = 3.7;   // compiles. sneaky is 3.',
+            'int careful{3.7};   // will not compile'
+          ] },
+          term: [["cmd", "$ cmake --build build"],
+                 ["err", "error: narrowing conversion of '3.7e+0'"],
+                 ["err", "       from 'double' to 'int'"]],
+          title: "{ } refuses to lose data",
+          body: ["<code>=</code> lets C++ quietly chop the <code>.7</code> off and carry on",
+                 "<code>{ }</code> calls that <strong>narrowing</strong> and stops the build",
+                 "The error is the feature: found at compile time, not in a receipt",
+                 "Use <code>{ }</code> everywhere in this course"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · an empty declaration", hl: 1, lines: [
+            'int empty{};     // 0, guaranteed',
+            'int garbage;     // whatever was already there',
+            'std::cout << empty << " " << garbage;'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["", "0  32764"],
+                 ["cmd", "$ ./build/ct1"],
+                 ["", "0  21847"],
+                 ["dim", "# the second number changed. Nothing was edited."]],
+          title: "An uninitialised variable holds garbage",
+          body: ["Python has no uninitialised name. In C++ <code>int garbage;</code> is legal",
+                 "It holds whatever bytes were already at that address",
+                 "<code>int empty{};</code> is zero, every time",
+                 "A bug whose answer moves when you re-run is usually this"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · Part 1, as it ships", hl: 3, lines: [
+            '// TODO: Return the average of a, b, and c as a double.',
+            'double average3(int a, int b, int c)',
+            '{',
+            '    return 0.0;',
+            '}'
+          ] },
+          term: [["cmd", "$ python3 tests/scorecard.py"],
+                 ["", "Part 1: Types & integer division    0 / 6"],
+                 ["dim", "# it builds, and it scores nothing. That is a stub."]],
+          title: "The types are already chosen for you",
+          body: ["Three <code>int</code> parameters in, one <code>double</code> out &mdash; the header decided that",
+                 "<code>return 0.0;</code> is there so the starter links and the scorecard runs",
+                 "The trap is in the body, and it is the next tab"],
+          action: { do: "Write average3 and secondsIn. Use { } for every variable you declare inside them.",
+                    where: "src/basics.cpp &mdash; Part 1" } })
+    ]
+  },
+
+  // --- 2 -------------------------------------------------------------------
+  intdiv: {
+    label: "2 · Integer division",
+    frames: [
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · average3, the obvious version", hl: 2,
+            calc: "(1 + 2 + 2) / 3  →  5 / 3  →  1",
+            lines: [
+            'double average3(int a, int b, int c)',
+            '{',
+            '    return (a + b + c) / 3;',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["err", "average of 1, 2, 2 -> 1"],
+                 ["dim", "# Python says 1.6666666666666667"]],
+          title: "The obvious body gives the wrong answer",
+          body: ["The function returns a <code>double</code>, so this <em>looks</em> safe",
+                 "It is not: <code>5 / 3</code> is two <code>int</code>s, and <code>int / int</code> is an <code>int</code>",
+                 "No error, no warning. Just a quietly wrong number"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · where the digits go", hl: 2, lines: [
+            'double average3(int a, int b, int c)',
+            '{',
+            '    return (a + b + c) / 3;',
+            '}'
+          ] },
+          term: [["", "5 / 3       ->  1     remainder dropped here"],
+                 ["", "double(1)   ->  1.0   the promotion is too late"],
+                 ["dim", "# double d = 7 / 2;  is 3.0, not 3.5"]],
+          title: "The division happens first. Always",
+          body: ["Division is evaluated before the value is returned or assigned",
+                 "A <code>double</code> cannot recover a digit that was never computed",
+                 "This is the most common C++ bug for a Python programmer"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · average3, fixed", hl: 2,
+            calc: "static_cast<double>(5) / 3  →  5.0 / 3  →  1.6667",
+            lines: [
+            'double average3(int a, int b, int c)',
+            '{',
+            '    return static_cast<double>(a + b + c) / 3;',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "average of 1, 2, 2 -> 1.6667"]],
+          title: "Make one side a double first",
+          body: ["One <code>double</code> on either side is enough &mdash; C++ promotes the other",
+                 "<code>static_cast&lt;double&gt;(x)</code> is how you say it on purpose",
+                 "<code>(a + b + c) / 3.0</code> works too; the cast says <em>why</em> out loud"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · secondsIn", hl: 2, lines: [
+            'int secondsIn(int hours, int minutes, int seconds)',
+            '{',
+            '    return hours * 3600 + minutes * 60 + seconds;',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "secondsIn(1, 2, 3) -> 3723"],
+                 ["dim", "# 3723 / 60 -> 62 minutes,  3723 % 60 -> 3 seconds"]],
+          title: "% is the other half of the same idea",
+          body: ["<code>secondsIn</code> only multiplies and adds, so nothing is lost here",
+                 "Going back the other way needs both: <code>/</code> for the whole part, <code>%</code> for the rest",
+                 "<code>%</code> behaves like Python for positive numbers"],
+          action: { do: "Write both Part 1 functions, then run the scorecard. Part 1 is 6 of the 30 points.",
+                    where: "src/basics.cpp &mdash; Part 1" } })
+    ]
+  },
+
+  // --- 3 -------------------------------------------------------------------
+  consts: {
+    label: "3 · Constants",
+    frames: [
+      f({ todo: TODO_P2,
+          code: { fn: "src/basics.cpp · withTax with a magic number", hl: 2, lines: [
+            'double withTax(double price)',
+            '{',
+            '    return price * 1.0725;',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["", "$19.99 with tax: $21.44"],
+                 ["dim", "# right today, and the version you will regret"]],
+          title: "A magic number works, right up until it moves",
+          body: ["What is <code>1.0725</code>? Why the leading <code>1.</code>?",
+                 "How many other places is it typed? Will you find all of them?",
+                 "A number with no name is a <strong>manifest constant</strong>"] }),
+
+      f({ todo: TODO_P2,
+          code: { fn: "include/basics.h and src/basics.cpp", hl: 5, lines: [
+            '// in include/basics.h -- given to you',
+            'const double SALES_TAX_RATE{0.0725};',
+            '',
+            'double withTax(double price)',
+            '{',
+            '    return price + price * SALES_TAX_RATE;',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "$19.99 with tax: $21.44"],
+                 ["dim", "# same answer, one place to change it"]],
+          title: "A named constant has a type and a scope",
+          body: ["<code>const</code> means the compiler will not let the value change",
+                 "It is a real variable: it has a type, and it obeys <code>{ }</code> scope",
+                 "ALL_CAPS is the convention, the same as Python"] }),
+
+      f({ todo: TODO_P2,
+          code: { fn: "src/basics.cpp · the error you are asked to read", hl: 2, lines: [
+            'double withTax(double price)',
+            '{',
+            '    SALES_TAX_RATE = 0.08;   // then read the error, then delete it',
+            '    return price + price * SALES_TAX_RATE;',
+            '}'
+          ] },
+          term: [["cmd", "$ cmake --build build"],
+                 ["err", "error: assignment of read-only variable"],
+                 ["err", "       'SALES_TAX_RATE'"]],
+          title: "Assigning to a const is a compile error",
+          body: ["Python's ALL_CAPS is a promise between programmers",
+                 "<code>const</code> is a promise the compiler <em>enforces</em>",
+                 "Do it once on purpose, so you recognise the message later"] }),
+
+      f({ todo: TODO_P2,
+          code: { fn: "src/basics.cpp · the older way", hl: 0, lines: [
+            '#define SALES_TAX_RATE 0.0725',
+            '',
+            'double withTax(double price)',
+            '{',
+            '    return price + price * SALES_TAX_RATE;',
+            '}'
+          ] },
+          term: [["dim", "# after the preprocessor, the compiler sees:"],
+                 ["", "    return price + price * 0.0725;"]],
+          title: "#define is find-and-replace, run before the compiler",
+          body: ["A <strong>symbolic constant</strong>: no type, no scope, no respect for <code>{ }</code>",
+                 "Errors quote the number, not the name &mdash; the name is already gone",
+                 "You will meet it in older code. Prefer <code>const</code>"],
+          action: { do: "Define your own MEMBER_DISCOUNT_RATE above memberPrice and use it. Then try assigning to it, read the error, and delete that line.",
+                    where: "src/basics.cpp &mdash; Part 2" } })
+    ]
+  },
+
+  // --- 4 -------------------------------------------------------------------
+  branch: {
+    label: "4 · if / else if",
+    frames: [
+      f({ todo: TODO_P3,
+          code: { fn: "src/basics.cpp · letterGrade, every test correct", hl: 2, lines: [
+            'std::string letterGrade(double percent)',
+            '{',
+            '    if (percent >= 60) { return "D"; }',
+            '    else if (percent >= 70) { return "C"; }',
+            '    else if (percent >= 80) { return "B"; }',
+            '    else if (percent >= 90) { return "A"; }',
+            '    return "E";',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["err", "95.0 -> D"],
+                 ["err", "88.5 -> D"],
+                 ["err", "61.0 -> D"]],
+          title: "Order decides the answer",
+          body: ["Every grade comes out <code>D</code>, and not one comparison is wrong",
+                 "The <strong>first</strong> branch that is true wins; the rest are never looked at",
+                 "<code>95 &gt;= 60</code> is true, so nothing below it ever runs"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/basics.cpp · letterGrade, highest first", hl: 2, lines: [
+            'std::string letterGrade(double percent)',
+            '{',
+            '    if (percent >= 90) { return "A"; }',
+            '    else if (percent >= 80) { return "B"; }',
+            '    else if (percent >= 70) { return "C"; }',
+            '    else if (percent >= 60) { return "D"; }',
+            '    return "E";',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "95.0 -> A    88.5 -> B"],
+                 ["ok", "61.0 -> D    59.9 -> E"]],
+          title: "The same five lines, reordered",
+          body: ["Reaching <code>else if (percent &gt;= 80)</code> already proves <code>percent &lt; 90</code>",
+                 "That is what lets each test name only its own lower bound",
+                 "The bare <code>return \"E\";</code> at the end is the <code>else</code>",
+                 "WSU grades use <code>E</code>, not <code>F</code>"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "conditions · new spellings for old words", hl: 0, lines: [
+            'if (percent >= 90 && percent <= 100) { }   // and',
+            'if (day == 6 || day == 7)            { }   // or',
+            'if (!isPassing(percent))             { }   // not'
+          ] },
+          term: [["dim", "# and -> &&     or -> ||     not -> !"],
+                 ["dim", "# the condition needs ( ), the body needs { }"]],
+          title: "and / or / not have new punctuation",
+          body: ["Three operators, same meaning, different spelling",
+                 "<code>60 &lt;= x &lt;= 100</code> <strong>compiles</strong>, and does not mean what you think",
+                 "It reads as <code>(60 &lt;= x) &lt;= 100</code>, which is always true"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/basics.cpp · the one that costs an hour", hl: 0, lines: [
+            'if (percent = 60) { return "D"; }'
+          ] },
+          term: [["cmd", "$ cmake --build build"],
+                 ["err", "warning: suggest parentheses around assignment"],
+                 ["err", "         used as truth value"],
+                 ["cmd", "$ ./build/ct1"],
+                 ["err", "59.9 -> D"]],
+          title: "= assigns. == compares",
+          body: ["This stores <code>60</code> in <code>percent</code>, then asks whether <code>60</code> is true",
+                 "Any non-zero number is true, so the branch always runs",
+                 "A <em>warning</em>, not an error &mdash; the build succeeds. Read your warnings"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/basics.cpp · isPassing", hl: 2, lines: [
+            'bool isPassing(double percent)',
+            '{',
+            '    return percent >= 60.0;',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "isPassing(72.5) -> 1"],
+                 ["ok", "isPassing(41.0) -> 0"]],
+          title: "A comparison already is a bool",
+          body: ["No <code>if</code> needed: <code>percent &gt;= 60.0</code> is already <code>true</code> or <code>false</code>",
+                 "<code>if (x) return true; else return false;</code> is the long way round",
+                 "A <code>bool</code> prints as <code>1</code> or <code>0</code> unless you ask for <code>std::boolalpha</code>"],
+          action: { do: "Write letterGrade with the highest grade first, then isPassing with no if at all.",
+                    where: "src/basics.cpp &mdash; Part 3" } })
+    ]
+  },
+
+  // --- 5 -------------------------------------------------------------------
+  swtch: {
+    label: "5 · switch",
+    frames: [
+      f({ todo: TODO_P3,
+          code: { fn: "src/basics.cpp · dayName, no break anywhere", hl: 2, lines: [
+            'std::string name{"Invalid"};',
+            'switch (day) {',
+            '    case 1: name = "Monday";',
+            '    case 2: name = "Tuesday";',
+            '    case 3: name = "Wednesday";',
+            '    default: name = "Invalid";',
+            '}',
+            'return name;'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["err", "dayName(1) -> Invalid"],
+                 ["dim", "# case 1 matched. So did everything after it."]],
+          title: "A switch without break keeps going",
+          body: ["<code>case 1:</code> matched, so <code>name</code> became <code>\"Monday\"</code>",
+                 "Then execution <strong>fell through</strong> into 2, 3 and <code>default</code>",
+                 "A <code>case</code> is a label, not a block: matching one picks where to <em>start</em>"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/basics.cpp · dayName, with break", hl: 2, lines: [
+            'std::string name{"Invalid"};',
+            'switch (day) {',
+            '    case 1: name = "Monday"; break;',
+            '    case 2: name = "Tuesday"; break;',
+            '    case 3: name = "Wednesday"; break;',
+            '    default: name = "Invalid"; break;',
+            '}',
+            'return name;'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "dayName(1) -> Monday"],
+                 ["ok", "dayName(3) -> Wednesday"],
+                 ["ok", "dayName(9) -> Invalid"]],
+          title: "break is what stops it",
+          body: ["One <code>break</code> per case, every time",
+                 "<code>default:</code> is the <code>else</code>, and it catches 0, 9, &minus;1 and the rest",
+                 "A missing <code>break</code> compiles clean. The compiler will not save you"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/basics.cpp · dayName, returning from each case", hl: 1, lines: [
+            'switch (day) {',
+            '    case 1: return "Monday";',
+            '    case 2: return "Tuesday";',
+            '    case 3: return "Wednesday";',
+            '    case 4: return "Thursday";',
+            '    case 5: return "Friday";',
+            '    case 6: return "Saturday";',
+            '    case 7: return "Sunday";',
+            '    default: return "Invalid";',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "dayName(7) -> Sunday"]],
+          title: "return leaves the switch too",
+          body: ["<code>return</code> leaves the whole function, so a <code>break</code> would be unreachable",
+                 "This is the shape to use when every case just answers a question",
+                 "Thursday's Holdfast session asks for exactly this, for tower costs"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "what switch can and cannot take", hl: 0, lines: [
+            'switch (name)    { }   // std::string -- no',
+            'switch (percent) { }   // double      -- no',
+            'switch (day)     { }   // int         -- yes',
+            'switch (grade)   { }   // char        -- yes'
+          ] },
+          term: [["cmd", "$ cmake --build build"],
+                 ["err", "error: switch quantity not an integer"]],
+          title: "switch counts. It does not compare",
+          body: ["Whole-number types only: <code>int</code>, <code>char</code>, and later <code>enum</code>",
+                 "A <code>std::string</code> or a <code>double</code> needs <code>if</code> / <code>else if</code>",
+                 "<code>case</code> labels must be constants &mdash; <code>case n:</code> will not compile"],
+          action: { do: "Write dayName as a switch that returns from each case, and give it a default.",
+                    where: "src/basics.cpp &mdash; Part 3" } })
+    ]
+  },
+
+  // --- 6 -------------------------------------------------------------------
+  loops: {
+    label: "6 · Loops",
+    frames: [
+      f({ todo: TODO_P4,
+          code: { fn: "src/basics.cpp · sumOfSquares", hl: 3,
+            calc: "init i{1}  ·  check i <= n  ·  update i++",
+            lines: [
+            'int sumOfSquares(int n)',
+            '{',
+            '    int total{0};',
+            '    for (int i{1}; i <= n; i++) {',
+            '        total += i * i;',
+            '    }',
+            '    return total;',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "sumOfSquares(3) -> 14"],
+                 ["dim", "# 1 + 4 + 9"]],
+          title: "Three parts in one pair of parentheses",
+          body: ["<em>init</em> runs once, <em>check</em> before every pass, <em>update</em> after every pass",
+                 "Python's <code>for i in range(1, n + 1)</code> is exactly this loop",
+                 "<code>total += i * i</code> is the same <code>+=</code> you already know"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "src/basics.cpp · where i lives", hl: 3, lines: [
+            'for (int i{1}; i <= n; i++) {',
+            '    total += i * i;',
+            '}',
+            'std::cout << i;'
+          ] },
+          term: [["cmd", "$ cmake --build build"],
+                 ["err", "error: 'i' was not declared in this scope"]],
+          title: "i exists inside the loop only",
+          body: ["<code>int i{1}</code> declares <code>i</code> in the loop's own block",
+                 "A <code>{ }</code> is a <strong>scope</strong>: names made in it end at the closing brace",
+                 "Declare it above the loop if you need the value afterwards"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "src/basics.cpp · one character, wrong answer", hl: 0, lines: [
+            '    for (int i{1}; i < n; i++) {   // was i <= n',
+            '        total += i * i;',
+            '    }'
+          ] },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["err", "sumOfSquares(3) -> 5"],
+                 ["dim", "# 1 + 4. The 9 never happened."]],
+          title: "< or <= is the whole bug",
+          body: ["<code>i &lt; n</code> runs for 1 and 2; <code>i &lt;= n</code> runs for 1, 2 and 3",
+                 "Off by one, and the answer is still a plausible-looking number",
+                 "Check the loop's <em>last</em> pass by hand, once, before you trust it"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "src/basics.cpp · digitCount with while", hl: 4, lines: [
+            'int digitCount(int n)',
+            '{',
+            '    if (n < 0) { n = -n; }',
+            '    int digits{0};',
+            '    while (n > 0) {',
+            '        n = n / 10;',
+            '        ++digits;',
+            '    }',
+            '    return digits;',
+            '}'
+          ] },
+          term: [["ok", "digitCount(1410) -> 4"],
+                 ["ok", "digitCount(-25)  -> 2"],
+                 ["err", "digitCount(0)    -> 0"]],
+          title: "while when you do not know the count",
+          body: ["Integer division by 10 drops the last digit: 1410, 141, 14, 1, 0",
+                 "<code>while</code> checks <em>before</em> the first pass, so zero passes is possible",
+                 "<code>digitCount(0)</code> comes out 0, and the spec says it must be 1"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "src/basics.cpp · digitCount with do-while", hl: 1, lines: [
+            '    int digits{0};',
+            '    do {',
+            '        n = n / 10;',
+            '        ++digits;',
+            '    } while (n > 0);',
+            '    return digits;'
+          ] },
+          term: [["ok", "digitCount(0)    -> 1"],
+                 ["ok", "digitCount(1410) -> 4"]],
+          title: "do-while runs the body first",
+          body: ["Body, <em>then</em> condition &mdash; so it always runs at least once",
+                 "Which is exactly the rule \"zero has one digit\"",
+                 "The <code>;</code> after <code>while (n &gt; 0)</code> is required",
+                 "<code>main.cpp</code> uses one to re-ask for input until it is valid"],
+          action: { do: "Write sumOfSquares with a for loop and digitCount with a do-while. Check digitCount(0) before you move on.",
+                    where: "src/basics.cpp &mdash; Part 4" } })
+    ]
+  },
+
+  // --- 7 -------------------------------------------------------------------
+  score: {
+    label: "7 · Score it",
+    frames: [
+      f({ todo: TODO_P5,
+          parts: [
+            { n: "Part 1", what: "types, { }, integer division — 6 pts", state: "ok" },
+            { n: "Part 2", what: "constants — 4 pts", state: "ok" },
+            { n: "Part 3", what: "if / else if and switch — 6 pts", state: "ok" },
+            { n: "Part 4", what: "for, while, do-while — 8 pts", state: "ok" },
+            { n: "Part 5", what: "setw formatting — 6 pts", state: "now" }
+          ],
+          term: [["cmd", "$ python3 tests/scorecard.py"],
+                 ["ok", "Part 1 .. Part 4                  24 / 24"],
+                 ["err", "Part 5: setw formatting            0 / 6"]],
+          title: "Part 5 has a stepper of its own",
+          body: ["Padding is made of spaces, and spaces are invisible in a listing",
+                 "The <em>setw</em> stepper draws every space as a dot, with a ruler above it",
+                 "Do Parts 1&ndash;4 here, then open that one for Part 5"] }),
+
+      f({ todo: TODO_P5,
+          parts: [
+            { n: "Part 1", what: "types, { }, integer division — 6 pts", state: "ok" },
+            { n: "Part 2", what: "constants — 4 pts", state: "ok" },
+            { n: "Part 3", what: "if / else if and switch — 6 pts", state: "ok" },
+            { n: "Part 4", what: "for, while, do-while — 8 pts", state: "ok" },
+            { n: "Part 5", what: "setw formatting — 6 pts", state: "ok" }
+          ],
+          term: [["cmd", "$ python3 tests/scorecard.py"],
+                 ["", "Student   Ada Lovelace"],
+                 ["ok", "Pushed    yes"],
+                 ["ok", "TOTAL                             24 / 24"]],
+          title: "The screenshot is the submission",
+          body: ["The header is stamped from <code>git</code> &mdash; you never type your name",
+                 "6 of the 30 points are the git rubric: committed, pushed, branched, PR'd",
+                 "If <code>Pushed</code> says <code>NO</code>, push and screenshot it again"],
+          action: { do: "Open the setw stepper for Part 5. Then commit, push, open a pull request, and upload a screenshot of the scorecard to Canvas.",
+                    where: "images/stepper-setw.html &mdash; or its Canvas page" } })
+    ]
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Syntax colouring. Strings are lifted out first so a keyword inside one is
+// not painted, and the comment is split off after that, so a // inside a
+// string cannot swallow the rest of the line.
+// ---------------------------------------------------------------------------
+var KW = /\b(if|else|switch|case|default|break|return|for|while|do|const|static_cast|true|false)\b/g;
+var TY = /\b(int|double|char|bool|void|std|string)\b/g;
+var NUM = /\b(\d+\.?\d*)\b/g;
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function paint(line) {
+  var s = esc(line);
+  if (/^\s*#/.test(line)) return '<span class="c-pre">' + s + "</span>";
+
+  // Placeholders are LETTERS, not digits: a numeric placeholder would be
+  // repainted by the number rule below and come back as nested spans.
+  var held = [];
+  s = s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, function (m) {
+    held.push(m);
+    return "\u0001" + String.fromCharCode(65 + held.length - 1) + "\u0002";
+  });
+
+  var com = "";
+  var at = s.indexOf("//");
+  if (at >= 0) { com = s.slice(at); s = s.slice(0, at); }
+
+  s = s.replace(KW, '<span class="c-kw">$1</span>')
+       .replace(TY, '<span class="c-typ">$1</span>')
+       .replace(NUM, '<span class="c-num">$1</span>');
+  if (com) s += '<span class="c-com">' + com + "</span>";
+
+  return s.replace(/\u0001([A-Z])\u0002/g, function (m, c) {
+    return '<span class="c-str">' + held[c.charCodeAt(0) - 65] + "</span>";
+  });
+}
+
+function renderCode(fr) {
+  var box = el("div", "codebox");
+  box.appendChild(el("div", "fn", fr.code.fn));
+  var body = el("div", "body");
+  fr.code.lines.forEach(function (line, i) {
+    var hit = i === fr.code.hl;
+    var ln = el("div", "ln" + (hit ? " hl" : ""));
+    if (hit) {
+      ln.appendChild(el("span", "src", paint(line)));
+      if (fr.code.calc) ln.appendChild(el("span", "calc", esc(fr.code.calc)));
+    } else {
+      ln.innerHTML = paint(line);
+    }
+    body.appendChild(ln);
+  });
+  box.appendChild(body);
+  return box;
+}
+
+/* The last tab's left pane: one row per part of CT 1, so "you are here" is a
+   picture rather than another paragraph. */
+function renderParts(fr) {
+  var pipe = el("div", "pipe");
+  fr.parts.forEach(function (p) {
+    var row = el("div", "stageRow");
+    var box = el("div", "box" + (p.state === "ok" ? " exe" : "") +
+                        (p.state === "now" ? " now active" : "") +
+                        (p.state === "pending" ? " pending" : ""));
+    box.appendChild(el("div", "nm", p.n));
+    box.appendChild(el("div", "meta", p.what));
+    row.appendChild(box);
+    pipe.appendChild(row);
+  });
+  return pipe;
+}
+
+function render() {
+  var fr = frames()[state.i];
+  var stage = document.getElementById("stage");
+  stage.innerHTML = "";
+
+  renderTodo(fr, stage);
+
+  var grid = el("div", "stage");
+  grid.appendChild(fr.code ? renderCode(fr) : renderParts(fr));
+  grid.appendChild(renderSide(fr));
+  stage.appendChild(grid);
+
+  updateControls();
+}
+
+/* @stepper:js */
+/* stepper.js -- the shared engine behind every CS 1410 stepper.
+ *
+ * Do not edit this inside a stepper. Edit it HERE, then run
+ * `python scripts/build_steppers.py`, which inlines it between the
+ * @stepper:js markers. `--check` reports drift. Same contract as stepper.css.
+ *
+ * Why this exists: the navigation logic was written out four times, once per
+ * stepper. Adding "the arrow keys run the whole deck" meant four edits, one of
+ * which had to be hand-adapted because that file used different variable
+ * names -- and that file turned out to have no keyboard navigation at all,
+ * which nobody had noticed. With two steppers a week coming, that is the
+ * failure mode this file prevents.
+ *
+ * ---------------------------------------------------------------------------
+ * THE CONTRACT. A stepper supplies two things and gets everything else:
+ *
+ *   var MODES = { key: { label: "1 - Title", frames: [ ... ] }, ... }
+ *       Frame order matches the #tabs buttons' data-mode order.
+ *       Every frame: title, body (array of bullets), term, todo.
+ *       Optional: more (a "Going deeper" card), action (the hand-off).
+ *
+ *   function render() { ... }
+ *       Draws one step into #stage. Reads the current frame from
+ *       frames()[state.i]. MUST call updateControls() last.
+ *
+ * Then call boot() at the end of the script.
+ * ---------------------------------------------------------------------------
+ */
+
+var state = { mode: null, i: 0, timer: null };
+
+function el(tag, cls, html) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html !== undefined && html !== null) n.innerHTML = html;
+  return n;
+}
+
+/* Bullets, never a paragraph -- these are read off a projector from the back
+ * of a room. A string still renders, so an old frame does not explode, but
+ * verify_stepper.js fails anything over 30 words. */
+function asList(body) {
+  if (!Array.isArray(body)) return el("p", null, body);
+  var ul = el("ul", "blist");
+  body.forEach(function (b) { ul.appendChild(el("li", null, b)); });
+  return ul;
+}
+
+/* One card per step.
+ *
+ * A frame carrying the explanation, the optional "Going deeper" card and the
+ * "Your turn" hand-off stacks three cards plus a terminal, which does not fit
+ * on a projector screen. So it becomes consecutive steps, one card each, all
+ * sharing the same code, diagram, terminal and TODO bar: the left half of the
+ * screen does not move, only the card changes.
+ *
+ * Done here rather than in the data so every tab gets it free, no frame is
+ * written twice, and each stepper's self-test still sees frames as authored.
+ */
+function expand(list) {
+  var out = [];
+  list.forEach(function (fr) {
+    var tail = [];
+    if (fr.more) tail.push("more");
+    if (fr.action) tail.push("action");
+    if (!tail.length) { out.push(fr); return; }
+    var head = {};
+    Object.keys(fr).forEach(function (k) {
+      if (k !== "more" && k !== "action") head[k] = fr[k];
+    });
+    out.push(head);
+    tail.forEach(function (which) {
+      var step = {};
+      Object.keys(head).forEach(function (k) {
+        if (k !== "title" && k !== "body") step[k] = head[k];
+      });
+      step[which] = fr[which];
+      out.push(step);
+    });
+  });
+  return out;
+}
+
+function frames() {
+  return MODES[state.mode] ? expand(MODES[state.mode].frames) : [];
+}
+
+/* The TODO bar: which TODO this step serves, on every step.
+ *
+ * The tabs are free to follow the teaching rather than the TODO list -- CT0's
+ * two best tabs are failure modes, not TODOs -- so this is what keeps "where
+ * am I" unambiguous. verify_stepper.js fails a code step without one.
+ */
+function renderTodo(fr, into) {
+  if (!fr.todo) return;
+  var tb = el("div", "todobar");
+  tb.appendChild(el("span", "tag", "THIS STEP IS FOR"));
+  tb.appendChild(el("span", "what", fr.todo));
+  into.appendChild(tb);
+}
+
+/* The whole right-hand pane: terminal, then one card.
+ *
+ * Identical in every stepper, which is why it lives here. The card is
+ * singular by the time this runs -- expand() has already split a frame
+ * carrying several into consecutive steps.
+ */
+function renderSide(fr) {
+  var side = el("div", "side");
+
+  if (fr.term) {
+    var tw = el("div", "termwrap");
+    tw.appendChild(el("div", "tlabel", "TERMINAL"));
+    var term = el("div", "term");
+    fr.term.forEach(function (pair) {
+      var s = document.createElement("span");
+      if (pair[0]) s.className = pair[0];
+      s.textContent = pair[1] + "\n";
+      term.appendChild(s);
+    });
+    tw.appendChild(term);
+    side.appendChild(tw);
+  }
+
+  if (fr.body) {
+    var card = el("div", "card");
+    card.appendChild(el("h3", null, fr.title));
+    card.appendChild(asList(fr.body));
+    side.appendChild(card);
+  }
+
+  // Optional depth, kept out of the main explanation so a student who just
+  // wants to write the code can skip it and one who asked "but why?" gets a
+  // real answer rather than "you will see later".
+  if (fr.more) {
+    var mc = el("div", "card deeper");
+    mc.appendChild(el("h3", null, "&#8627; Going deeper &mdash; optional"));
+    mc.appendChild(asList(fr.more));
+    side.appendChild(mc);
+  }
+
+  // The hand-off. A tab that explains something and then leaves the student
+  // on the last slide has not finished its job.
+  if (fr.action) {
+    var ac = el("div", "card action");
+    ac.appendChild(el("h3", null, "&#9654; Your turn"));
+    ac.appendChild(el("p", null, fr.action.do));
+    var where = fr.action.where || fr.action.whereto;
+    if (where) ac.appendChild(el("div", "where", where));
+    if (fr.action.note) ac.appendChild(el("p", null, fr.action.note));
+    side.appendChild(ac);
+  }
+  return side;
+}
+
+function tabBtns() {
+  return Array.prototype.slice.call(
+    document.querySelectorAll("#tabs [data-mode]"));
+}
+
+function tabIndex() {
+  var at = -1;
+  tabBtns().forEach(function (b, n) {
+    if (b.getAttribute("data-mode") === state.mode) at = n;
+  });
+  return at;
+}
+
+function showTab(btn, atEnd) {
+  stop();
+  state.mode = btn.getAttribute("data-mode");
+  tabBtns().forEach(function (o) {
+    o.setAttribute("aria-selected", String(o === btn));
+  });
+  state.i = atEnd ? Math.max(0, frames().length - 1) : 0;
+  render();
+}
+
+/* Run off the end of a tab and into the next one.
+ *
+ * Presenting means holding the right arrow and talking. Stopping dead on the
+ * last step of every tab breaks that: you look down, find the mouse, and click
+ * the next tab in front of the room. So the arrows treat the whole stepper as
+ * one sequence.
+ *
+ * It does NOT wrap at the two real ends -- a held key cycling back to the
+ * beginning mid-explanation would be worse than stopping. Tab order comes from
+ * the DOM, so it cannot drift from the buttons the student can see.
+ */
+function advance(delta) {
+  stop();
+  var next = state.i + delta;
+  if (next >= 0 && next < frames().length) { go(next); return; }
+  var btns = tabBtns(), at = tabIndex(), to = at + delta;
+  if (at < 0 || to < 0 || to >= btns.length) return;
+  showTab(btns[to], delta < 0);
+}
+
+function go(i) {
+  state.i = Math.max(0, Math.min(frames().length - 1, i));
+  render();
+}
+
+function stop() {
+  if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  var p = document.getElementById("play");
+  if (p) p.innerHTML = "&#9654; Play";
+}
+
+function play() {
+  if (state.timer) { stop(); return; }
+  if (state.i >= frames().length - 1) state.i = 0;
+  document.getElementById("play").innerHTML = "&#10073;&#10073; Pause";
+  state.timer = setInterval(function () {
+    if (state.i >= frames().length - 1) { stop(); return; }
+    go(state.i + 1);
+  }, 1900);
+}
+
+/* The step counter and the button states. Every render() ends by calling this.
+ *
+ * Prev/Next disable only at the two ends of the WHOLE deck, matching the
+ * arrows: a greyed-out Next beside an arrow key that still works is a lie
+ * about where the end is. First/Last stay scoped to the current tab, which is
+ * what their labels promise.
+ */
+function updateControls() {
+  var n = frames().length, at = tabIndex(), last = tabBtns().length - 1;
+  var count = document.getElementById("frameCount");
+  if (count) {
+    count.textContent = (MODES[state.mode] ? MODES[state.mode].label : "") +
+                        "  -  step " + (state.i + 1) + " of " + n;
+  }
+  function set(id, off) {
+    var b = document.getElementById(id);
+    if (b) b.disabled = off;
+  }
+  set("first", state.i === 0);
+  set("last", state.i >= n - 1);
+  set("prev", state.i === 0 && at <= 0);
+  set("next", state.i >= n - 1 && at >= last);
+  set("play", false);
+}
+
+function wireControls() {
+  function on(id, fn) {
+    var b = document.getElementById(id);
+    if (b) b.addEventListener("click", fn);
+  }
+  on("first", function () { stop(); go(0); });
+  on("prev", function () { advance(-1); });
+  on("next", function () { advance(1); });
+  on("last", function () { stop(); go(frames().length - 1); });
+  on("play", play);
+
+  tabBtns().forEach(function (b) {
+    b.addEventListener("click", function () { showTab(b, false); });
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") { advance(1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft") { advance(-1); e.preventDefault(); }
+    else if (e.key === " ") { play(); e.preventDefault(); }
+  });
+}
+
+/* Start on whichever tab the markup marks selected, or the first one. */
+function boot() {
+  var btns = tabBtns();
+  var chosen = btns.filter(function (b) {
+    return b.getAttribute("aria-selected") === "true";
+  })[0] || btns[0];
+  state.mode = chosen ? chosen.getAttribute("data-mode") : null;
+  btns.forEach(function (o) {
+    o.setAttribute("aria-selected", String(o === chosen));
+  });
+  wireControls();
+  render();
+}
+/* /@stepper:js */
+
+// ---------------------------------------------------------------------------
+// Self-test: the page proves its own frames are coherent, so a typo shows up
+// here rather than in front of a class. Silent when it passes.
+// ---------------------------------------------------------------------------
+(function selftest() {
+  var fails = [];
+  function ok(cond, msg) { if (!cond) fails.push(msg); }
+
+  Object.keys(MODES).forEach(function (m) {
+    var fs = MODES[m].frames;
+    ok(fs.length > 0, m + ": has frames");
+    fs.forEach(function (fr, i) {
+      var where = m + " frame " + (i + 1);
+      ok(!!fr.title && Array.isArray(fr.body), where + ": title and bullet body");
+      ok(!!fr.todo, where + ": every step must name its TODO");
+      ok(Array.isArray(fr.term) && fr.term.length > 0, where + ": terminal output");
+      ok(!!fr.code !== !!fr.parts, where + ": exactly one of code / parts");
+      ok(fr.body.length <= 4, where + ": at most 4 bullets on a card");
+      ok(fr.term.length <= 5, where + ": at most 5 terminal lines");
+      if (fr.code) {
+        ok(Array.isArray(fr.code.lines) && fr.code.lines.length > 0,
+           where + ": code has lines");
+        ok(fr.code.hl >= 0 && fr.code.hl < fr.code.lines.length,
+           where + ": hl is inside the listing");
+        ok(!!fr.code.fn, where + ": code names its file");
+        // 1.35rem at line-height 1.6 is ~35px a line. Ten lines plus the
+        // header, the TODO bar and the page furniture is the 760px screen.
+        ok(fr.code.lines.length <= 10,
+           where + ": " + fr.code.lines.length + " code lines, 10 is the ceiling");
+      }
+    });
+    var last = fs[fs.length - 1];
+    ok(!!last.action, m + ": last frame must hand off");
+    if (last.action) {
+      ok(!!last.action.do && !!last.action.where,
+         m + ": hand-off needs an instruction and a location");
+    }
+  });
+
+  // The teaching points, asserted so an edit cannot quietly undo them.
+  // Tab 2 shows the bug BEFORE the cast, because the surprise is the lesson.
+  ok(MODES.intdiv.frames[0].code.lines.join("\n").indexOf("static_cast") < 0,
+     "tab 2: the first version must not already contain the fix");
+  ok(MODES.intdiv.frames[2].code.lines.join("\n").indexOf("static_cast<double>") >= 0,
+     "tab 2: the fixed version must show the cast");
+
+  // Tab 4's first letterGrade is the ordering bug: D is tested first.
+  ok(MODES.branch.frames[0].code.lines[2].indexOf(">= 60") >= 0,
+     "tab 4: the broken letterGrade must test 60 first");
+  ok(MODES.branch.frames[1].code.lines[2].indexOf(">= 90") >= 0,
+     "tab 4: the fixed letterGrade must test 90 first");
+
+  // Tab 5 is fall-through, then break. Showing break first loses the point.
+  ok(MODES.swtch.frames[0].code.lines.join(" ").indexOf("break") < 0,
+     "tab 5: the fall-through example must have no break");
+  ok(MODES.swtch.frames[1].code.lines.join(" ").indexOf("break") >= 0,
+     "tab 5: the second example must add break");
+
+  // Tab 6: while is wrong for 0 and do-while is what fixes it. Both are
+  // asserted because the pair IS the lesson -- either alone teaches nothing.
+  ok(MODES.loops.frames[3].term.join(" ").indexOf("digitCount(0)    -> 0") >= 0,
+     "tab 6: the while version must show digitCount(0) as 0");
+  ok(MODES.loops.frames[4].term.join(" ").indexOf("digitCount(0)    -> 1") >= 0,
+     "tab 6: the do-while version must show digitCount(0) as 1");
+
+  // Part 5 is the setw stepper's job. This one hands off rather than
+  // re-teaching it, or the two drift and the class sees setw twice.
+  ok(JSON.stringify(MODES.score).indexOf("stepper-setw.html") >= 0,
+     "tab 7: must hand off to the setw stepper for Part 5");
+
+  var node = document.getElementById("selftest");
+  if (!fails.length) { node.style.display = "none"; return; }
+  node.style.display = "";
+  node.style.color = "#c0392b";
+  node.style.fontWeight = "700";
+  node.textContent = "Stepper self-test: " + fails.length + " problem(s) -- " + fails.join("; ");
+})();
+
+boot();
+</script>
+</body>
+</html>

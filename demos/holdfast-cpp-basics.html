@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CS 1410 &middot; Holdfast &mdash; C++ Basics: The Board Appears</title>
+<style>
+/* @stepper:css */
+/* stepper.css -- the canonical look of every CS 1410 stepper.
+ *
+ * Do not edit this inside a stepper. Edit it HERE, then run
+ * `python scripts/build_steppers.py`, which inlines it into every stepper
+ * between its @stepper:css markers. `--check` reports drift. Same contract as
+ * templates/cpp-starter/ and sync_tooling.py, and for the same reason: there
+ * will be two steppers a week for twelve weeks, and twenty-five hand-copied
+ * copies of a 900-line file drift by the sixth one.
+ *
+ * Sizes, colours and spacing are CT0's (hello-cpp), kept deliberately: it is
+ * the one that has been shown on a projector and it reads from the back.
+ */
+
+:root {
+  --ink: #2c3e50; --muted: #5b6b7a; --line: #d7dae0; --bg: #fcfcfd;
+  --blue: #2980b9; --blueBg: #eaf2f8;
+  --purple: #8e44ad; --purpleBg: #f5eef8;
+  --green: #27ae60; --greenBg: #f0faf0;
+  --orange: #e67e22; --orangeBg: #fff3e0;
+  --red: #c0392b; --redBg: #fdecea;
+}
+* { box-sizing: border-box; }
+
+/* Reserve the scrollbar's space, always.
+ *
+ * This is the real cause of the panes shifting. When one step is short and the
+ * next is tall, the page's vertical scrollbar appears -- and the viewport
+ * instantly narrows by ~15px, so every column shifts left. It looks like the
+ * layout is moving; what moved is the window. In CT0 it happens between steps
+ * 3 and 4 of the first tab.
+ *
+ * Reserving the gutter means the scrollbar costs its width whether or not it
+ * is there, so appearing can never move anything. The @supports fallback is
+ * for engines without scrollbar-gutter, where always painting a track does
+ * the same job less elegantly.
+ *
+ * This makes the shift impossible. It does NOT make a too-tall step acceptable
+ * -- see the one-screen rule in templates/stepper/README.md, which
+ * verify_stepper.js enforces. */
+html { scrollbar-gutter: stable; }
+@supports not (scrollbar-gutter: stable) { html { overflow-y: scroll; } }
+
+/* Tight furniture. 342px of the 760px one-screen budget used to be chrome
+   before a single line of content -- padding, heading, tabs, controls,
+   legend. Trimming it buys ~74px for teaching on EVERY step of every
+   stepper, which is a better trade than cutting an explanation. */
+body { margin: 0; padding: 14px 16px 20px;
+       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+       color: var(--ink); background: #fff; }
+/* No max-width. These run the full browser width and read far better for it --
+   code, terminal and explanation side by side instead of stacked. */
+.wrap { margin: 0 auto; }
+h1 { font-size: 1.35rem; margin: 0 0 .35rem; }
+.sub { color: var(--muted); margin: 0 0 .6rem; line-height: 1.5; font-size: .9rem; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        border-bottom: 2px solid var(--line); padding-bottom: 7px; margin-bottom: 10px; }
+.tabs button { font-size: .95rem; font-weight: 600; cursor: pointer; padding: 8px 14px;
+               border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.spacer { flex: 1; }
+.hint { color: var(--muted); font-size: .85rem; }
+.panel { border: 1px solid var(--line); border-radius: 9px; background: var(--bg);
+         padding: 7px 12px; margin-bottom: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lbl { font-weight: 700; font-size: .85rem; color: var(--muted);
+       text-transform: uppercase; letter-spacing: .04em; min-width: 54px; }
+.ctl { font: inherit; cursor: pointer; padding: 6px 12px; border: 1px solid var(--line);
+       border-radius: 6px; background: #fff; color: var(--ink); }
+.ctl:disabled { opacity: .4; cursor: default; }
+.ctl.primary { background: var(--green); border-color: var(--green); color: #fff; font-weight: 700; }
+.count { margin-left: auto; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+
+/* Names the TODO the current step is for, on EVERY step. The hand-off card at
+   the end of a tab says "go write it"; this says "this is the one" the whole
+   way through. */
+.todobar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+           background: #fff8e1; border-left: 5px solid #8f6a00;
+           border-radius: 0 8px 8px 0; padding: .35rem .85rem; margin-bottom: 10px;
+           min-height: 40px; }
+.todobar .tag { background: #8f6a00; color: #fff; border-radius: 4px;
+                padding: .1rem .5rem; font-size: .76rem; letter-spacing: .05em; }
+.todobar .what { font-size: 1rem; }
+.todobar code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: .89rem; }
+
+/* ------------------------------------------------------------------ THE SPLIT
+ * Code on the left, terminal and explanation on the right, EVENLY, and the
+ * divide does not move from step to step.
+ *
+ * It used to be `minmax(0,1.2fr) minmax(0,1fr)`, and the panes visibly shifted
+ * left and right as you stepped. Three things cause that, and all three are
+ * fixed here, because fixing only the first leaves the wobble:
+ *
+ *   1. Uneven, content-influenced columns -> both are now minmax(0,1fr),
+ *      which is an exact half each regardless of what is in them.
+ *   2. A long code line widening its own column -> the code body scrolls
+ *      horizontally inside the pane (.codebox .body) instead of growing it.
+ *   3. A pane with nothing in it on some steps collapsing and springing back
+ *      -> both panes carry a min-height, so an empty terminal still holds
+ *      its half of the stage.
+ *
+ * On a projector a layout that jumps every step costs the room its place. */
+.stage { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+         gap: 20px; align-items: start; }
+.stage > * { min-width: 0; }            /* grid children must be allowed to shrink */
+@media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
+
+.pipe { border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: #fff;
+        min-height: 300px; }
+.stageRow { display: flex; align-items: center; gap: 10px; margin: 0 0 7px; flex-wrap: wrap; }
+.stageName { font-size: .78rem; font-weight: 700; letter-spacing: .05em;
+             text-transform: uppercase; color: var(--muted); width: 100%; margin-bottom: 1px;
+             line-height: 1.2; }
+.box { border: 2px solid var(--line); border-radius: 8px; padding: 6px 12px; min-width: 128px;
+       background: #fff; transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease; }
+.box .nm { font-weight: 700; font-size: .95rem; }
+.box .meta { font-size: .76rem; color: var(--muted); margin-top: 1px; line-height: 1.25; }
+.box.pending { border-style: dashed; opacity: .45; }
+.box.src { border-color: var(--blue); background: var(--blueBg); }
+.box.obj { border-color: var(--purple); background: var(--purpleBg); }
+.box.exe { border-color: var(--green); background: var(--greenBg); }
+.box.active { box-shadow: 0 0 0 4px rgba(230,126,34,.25); border-color: var(--orange); }
+.box.bad { border-color: var(--red); background: var(--redBg); }
+.arrow { color: var(--muted); font-size: 1.3rem; line-height: 1; }
+
+.side { display: flex; flex-direction: column; gap: 12px; min-height: 300px; }
+.card { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; background: #fff; }
+.card h3 { margin: 0 0 .45rem; font-size: 1.15rem; }
+.card p { margin: .35rem 0; line-height: 1.5; font-size: 1.05rem; }
+.card .blist { margin: .3rem 0 0; padding-left: 1.15rem; }
+/* The bullets ARE the explanation, so they get read from the back of the room:
+   1.1rem, same as the THIS STEP pill. The heading stays a step above them so it
+   still leads. Prose is not an option here -- see build_steppers.py --check,
+   which fails a card paragraph long enough to be a paragraph. */
+.card .blist li { margin: .38rem 0; line-height: 1.5; font-size: 1.1rem; }
+.card.deeper .blist li { font-size: 1rem; }
+.termwrap { border-radius: 9px; overflow: hidden; }
+.termwrap .tlabel { background: #11151c; color: #7d8795; padding: 5px 12px;
+                    font-family: Consolas, "SF Mono", Menlo, monospace;
+                    font-size: .76rem; font-weight: 700; letter-spacing: .08em; }
+.term { background: #1e2430; color: #e6e9ef; padding: 12px 14px;
+        font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 1.2rem;
+        line-height: 1.55; white-space: pre-wrap; min-height: 104px;
+        overflow-x: auto; }
+.term .cmd { color: #8fd4ff; }
+.term .err { color: #ff9a8f; }
+.term .ok  { color: #9ae6a4; }
+.term .dim { color: #9aa4b2; }
+
+/* Code panel. Catppuccin Mocha, the same look and size as the CS 2420
+   steppers, so a student moving between courses sees one thing. */
+.codebox { --code-bg:#1e1e2e; --code-fg:#cdd6f4; --code-hit:#45475a;
+           border-radius: 8px; overflow: hidden; background: var(--code-bg); }
+.codebox .fn { background: #181825; color: #9399b2; padding: 6px 11px;
+               font-weight: 700; font-size: .78rem;
+               font-family: Consolas, "SF Mono", Menlo, monospace;
+               border-bottom: 1px solid #313244; }
+/* overflow-x here, not on the pane: a long line scrolls inside the code box
+   rather than widening the column and squeezing the terminal. */
+.codebox .body { padding: .6rem 0; overflow-x: auto; color: var(--code-fg);
+                 font-family: Consolas, "Courier New", monospace;
+                 font-size: 1.35rem; line-height: 1.6; }
+.codebox .ln { padding: 0 .8rem; white-space: pre; }
+.codebox .ln.hl { background: var(--code-hit); }
+.codebox .ln.hl::before { content: "\25B8 "; color: #f9e2af; }
+.codebox .ln:not(.hl)::before { content: "  "; }
+/* Catppuccin Mocha token colours */
+.codebox .c-com { color:#6c7086; font-style: italic; }
+.codebox .c-str { color:#a6e3a1; }
+.codebox .c-kw  { color:#cba6f7; }
+.codebox .c-typ { color:#89b4fa; }
+.codebox .c-num { color:#fab387; }
+.codebox .c-pre { color:#f5c2e7; }
+
+/* THIS STEP, inline on the executing row. Keeping it on the same line as the
+   code it describes is the whole point: nothing to look back and forth
+   between. Nothing else in the panel has a light background, which is what
+   makes it unmistakable. */
+.codebox .ln.hl { display: flex; align-items: center; flex-wrap: wrap; }
+.codebox .ln.hl .src { white-space: pre; padding-right: 1.6rem; }
+.codebox .calc { background: #f9e2af; color: #1e1e2e; font-weight: 600;
+                 white-space: pre-wrap; border-radius: 5px;
+                 padding: .1rem .75rem; font-size: 1.1rem; }
+.codebox .calc::before { content: "THIS STEP"; font-size: .72rem; font-weight: 800;
+                         letter-spacing: .06em; color: #4a3600;
+                         background: rgba(0,0,0,.10); border-radius: 3px;
+                         padding: .08rem .4rem; margin-right: .55rem; }
+.codebox .calc code { background: rgba(0,0,0,.09); border-radius: 3px;
+                      padding: .02em .28em; font-size: .95em; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 0;
+          color: var(--muted); font-size: .82rem; }
+.legend i { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line);
+            border-radius: 4px; vertical-align: -2px; margin-right: 5px; }
+table.cmp { border-collapse: collapse; width: 100%; font-size: .9rem; }
+table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+table.cmp th { background: #f2f4f7; }
+.tag { font-weight: 700; }
+.tag.okT { color: var(--green); } .tag.badT { color: var(--red); }
+.card.deeper { border-left: 4px solid var(--blue); background: #f7fbfe; }
+.card.deeper h3 { color: #1b5e8a; font-size: 1.02rem; }
+.card.deeper p { font-size: .93rem; }
+.card.action { border: 2px solid var(--green); background: var(--greenBg); }
+.card.action h3 { color: #1c7e45; }
+.card.action .where { font-family: Consolas, "SF Mono", Menlo, monospace;
+                      font-size: .86rem; background: #fff; border: 1px solid #bfe3c9;
+                      border-radius: 6px; padding: 6px 9px; display: inline-block;
+                      margin: .3rem 0; }
+.selftest { margin-top: 18px; font-size: .84rem; color: var(--muted); }
+/* /@stepper:css */
+</style>
+<style>
+/* This stepper only. The template is stamped in above by
+   scripts/build_steppers.py and must not be edited here.
+
+   @media blocks are kept WHOLE on purpose: flattening one is how a
+   narrow-screen single-column fallback ended up applying at every width and
+   stacked the panes. */
+
+/* The board, drawn at 14px a tile: 20 x 12 is 280 x 168, which sits inside
+   the .pipe's own 300px min-height, so the left pane never grows past it. */
+.board { display: grid; grid-template-columns: repeat(20, 14px);
+         gap: 0; width: max-content; margin: 0 auto;
+         border: 2px solid #4d6b3a; border-radius: 3px; overflow: hidden; }
+.board span { width: 14px; height: 14px; display: block; }
+.board span.lt { background: #7eaa5a; }
+.board span.dk { background: #68944a; }
+.boardcap { text-align: center; font-size: .82rem; color: var(--muted);
+            margin: .5rem 0 0; }
+.boardwin { background: #262a34; border-radius: 6px; padding: 10px 8px 6px; }
+.boardwin .bar { color: #8c96a5; font-size: .72rem; font-family: Consolas, monospace;
+                 letter-spacing: .06em; margin-bottom: 7px; text-align: center; }
+
+/* The two-orders-of-evaluation panel, and the four-pairs panel. */
+.box.good { border-color: var(--green); background: var(--greenBg); }
+.box.wrong { border-color: var(--red); background: var(--redBg); }
+.box.wide { min-width: 100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Holdfast &mdash; C++ Basics: the board appears</h1>
+  <p class="sub">
+    By the end of the session your game opens a window, draws a board with a
+    pattern you invented, and prints a price list in lined-up columns &mdash; with no
+    graphics code of your own. <strong>This walks the scaffolding and the tests.
+    It stops where your function bodies begin.</strong>
+  </p>
+
+  <div class="tabs" id="tabs">
+    <button data-mode="boundary" aria-selected="true">1 &middot; Who draws, who decides</button>
+    <button data-mode="contract">2 &middot; The contract</button>
+    <button data-mode="pattern">3 &middot; Your board</button>
+    <button data-mode="gold">4 &middot; The 0-gold bug</button>
+    <button data-mode="table">5 &middot; The shop table</button>
+    <button data-mode="score">6 &middot; Score it</button>
+    <span class="spacer"></span>
+    <span class="hint">&larr; &rarr; arrow keys step &middot; space plays</span>
+  </div>
+
+  <div class="panel" id="controls">
+    <div class="row">
+      <span class="lbl">Step</span>
+      <button class="ctl" id="first">&laquo; First</button>
+      <button class="ctl" id="prev">&lsaquo; Prev</button>
+      <button class="ctl primary" id="play">&#9654; Play</button>
+      <button class="ctl" id="next">Next &rsaquo;</button>
+      <button class="ctl" id="last">Last &raquo;</button>
+      <span class="count" id="frameCount"></span>
+    </div>
+  </div>
+
+  <div id="stage"></div>
+  <div class="legend" id="legend">
+    Code on the left is <strong>mine</strong> &mdash; the renderer, the header and the
+    tests. Your bodies go in <code>src/core/rules.cpp</code>, and this page does not
+    write them for you.
+  </div>
+  <div class="selftest" id="selftest"></div>
+</div>
+
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+// Every frame is a COMPLETE description of the screen at that step, never a
+// diff -- so stepping backwards is just re-rendering and no state can drift.
+//
+//   code:   { fn, lines: [...], hl: index, calc?: "inline annotation" }
+//   board:  a key of BOARDS -- a picture of what the renderer produced
+//   panel:  [ { n, what, state } ] -- rows of boxes
+//   term:   [[class, text], ...]     cmd | err | ok | dim | ""
+//   todo / title / body (bullets) / more? / action?
+//
+// WHAT THIS FILE MAY NOT CONTAIN. diagrams/ publishes to a PUBLIC GitHub Pages
+// site and the FINISH bucket is graded, so a game stepper demonstrates the
+// EFFECT of the line a student must write, never the line. Every piece of C++
+// below is instructor-owned -- render.cpp, rules.h, tests/ -- or is the bug we
+// plant on purpose and then watch fail. The self-test at the bottom asserts
+// that none of the four answers has crept in.
+// ---------------------------------------------------------------------------
+
+// Board pictures are DATA, not rules. Generated once from the patterns they
+// depict; a pattern formula here would be an answer key in page source.
+var BOARDS = {
+  flat: [
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "....................",
+    "...................."
+  ],
+  checker: [
+    ".#.#.#.#.#.#.#.#.#.#",
+    "#.#.#.#.#.#.#.#.#.#.",
+    ".#.#.#.#.#.#.#.#.#.#",
+    "#.#.#.#.#.#.#.#.#.#.",
+    ".#.#.#.#.#.#.#.#.#.#",
+    "#.#.#.#.#.#.#.#.#.#.",
+    ".#.#.#.#.#.#.#.#.#.#",
+    "#.#.#.#.#.#.#.#.#.#.",
+    ".#.#.#.#.#.#.#.#.#.#",
+    "#.#.#.#.#.#.#.#.#.#.",
+    ".#.#.#.#.#.#.#.#.#.#",
+    "#.#.#.#.#.#.#.#.#.#."
+  ],
+  stripes: [
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#.",
+    "#.#.#.#.#.#.#.#.#.#."
+  ],
+  diagonal: [
+    "##..##..##..##..##..",
+    "#..##..##..##..##..#",
+    "..##..##..##..##..##",
+    ".##..##..##..##..##.",
+    "##..##..##..##..##..",
+    "#..##..##..##..##..#",
+    "..##..##..##..##..##",
+    ".##..##..##..##..##.",
+    "##..##..##..##..##..",
+    "#..##..##..##..##..#",
+    "..##..##..##..##..##",
+    ".##..##..##..##..##."
+  ],
+  edge: [
+    "####################",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "####################"
+  ]
+};
+
+var TODO_P1 = "LIVE <code>towerCost</code> &middot; FINISH <code>towerDamage</code>";
+var TODO_P2 = "LIVE <code>sellValue</code> &middot; FINISH <code>upgradeCost</code>";
+var TODO_P3 = "LIVE <code>isDarkTile</code> &middot; FINISH <code>isEdgeTile</code>";
+var TODO_P4 = "LIVE <code>printShopTable</code> &middot; FINISH <code>printTowerTable</code>";
+var TODO_SUB = "the scorecard screenshot &mdash; this week's submission";
+
+function f(o) { return o; }
+
+var MODES = {
+
+  // --- 1 -------------------------------------------------------------------
+  boundary: {
+    label: "1 · Who draws, who decides",
+    frames: [
+      f({ todo: TODO_P3,
+          code: { fn: "src/game/render.cpp · mine, not yours", hl: 5, lines: [
+            '// drawBoard() -- re-delivered every week. Do not edit.',
+            'for (int row{0}; row < ROWS; row++) {',
+            '    for (int col{0}; col < COLS; col++) {',
+            '        DrawRectangle(col * TILE_SIZE, row * TILE_SIZE,',
+            '                      TILE_SIZE, TILE_SIZE,',
+            '                      isDarkTile(row, col) ? DARK : LIGHT);',
+            '    }',
+            '}'
+          ] },
+          term: [["cmd", "$ cmake --build build --target holdfast"],
+                 ["cmd", "$ ./build/holdfast"],
+                 ["dim", "# the window opens at http://localhost:6080"]],
+          title: "The renderer decides nothing",
+          body: ["240 tiles, and one question asked of <strong>your</strong> code per tile",
+                 "<code>render.cpp</code> owns the pixels and owns no rules",
+                 "It does not know which tile is dark. It asks, and draws the answer",
+                 "Change <code>isDarkTile</code> and the screen changes"] }),
+
+      f({ todo: TODO_P3,
+          board: "flat",
+          caption: "isDarkTile returns false for all 240 tiles",
+          term: [["cmd", "$ ./build/holdfast"],
+                 ["ok", "window 960 x 696 -- board, HUD and shop slots drawn"],
+                 ["dim", "# nothing is broken. Nothing has been answered either."]],
+          title: "Day one: one flat colour",
+          body: ["The stub returns <code>false</code>, so every tile is drawn in the light grass",
+                 "The window, the game loop and the HUD already work",
+                 "The only thing missing is an answer to \"is this tile dark?\""] }),
+
+      f({ todo: TODO_P3,
+          board: "checker",
+          caption: "the same renderer, after your function answers",
+          term: [["cmd", "$ ./build/holdfast"],
+                 ["ok", "window 960 x 696 -- board, HUD and shop slots drawn"],
+                 ["dim", "# same 240 calls. Not one line of render.cpp changed."]],
+          title: "And this is what your answer changes",
+          body: ["<code>src/core/</code> never includes raylib and never draws a pixel",
+                 "That boundary is what lets every rule you write be tested with no window",
+                 "It holds for the rest of the semester, so get used to the shape"],
+          action: { do: "Build and run the game before you write anything, so you have seen the flat board with your own eyes.",
+                    where: "cmake --build build --target holdfast && ./build/holdfast" } })
+    ]
+  },
+
+  // --- 2 -------------------------------------------------------------------
+  contract: {
+    label: "2 · The contract",
+    frames: [
+      f({ todo: TODO_P1,
+          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 1, lines: [
+            '// Pair 1 -- pick a value from a type',
+            'int  towerCost(int type);      // LIVE',
+            'int  towerDamage(int type);    // FINISH',
+            '',
+            '// Pair 2 -- integer arithmetic that looks right',
+            'int  sellValue(int cost);      // LIVE',
+            'int  upgradeCost(int cost);    // FINISH'
+          ] },
+          term: [["dim", "# LIVE   -- written together, in class"],
+                 ["dim", "# FINISH -- the sibling, written alone"],
+                 ["dim", "# eight sections of 7 points, all-or-nothing"]],
+          title: "Eight declarations, in four pairs",
+          body: ["Each pair is the <strong>same shape twice</strong>: one with the class, one alone",
+                 "By the time you write the sibling you have written it twice already",
+                 "Once in Tuesday's Code-Together, once with the room on Thursday",
+                 "Nothing in the FINISH half is new C++"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "include/rules.h · pairs 3 and 4", hl: 1, lines: [
+            '// Pair 3 -- a question about a tile',
+            'bool isDarkTile(int row, int col);   // LIVE',
+            'bool isEdgeTile(int row, int col);   // FINISH',
+            '',
+            '// Pair 4 -- a table in aligned columns',
+            'void printShopTable();               // LIVE',
+            'void printTowerTable();              // FINISH'
+          ] },
+          term: [["dim", "# given in rules.h, use the names not the numbers:"],
+                 ["", "  ROWS  COLS  TILE_SIZE"],
+                 ["", "  ARROW_COST  CANNON_COST  MORTAR_COST"],
+                 ["", "  ARROW_DAMAGE  CANNON_DAMAGE  MORTAR_DAMAGE"]],
+          title: "The bodies go in a file that is yours",
+          body: ["Write them in <code>src/core/rules.cpp</code>, which you own from now on",
+                 "<code>rules.h</code> arrives again every week &mdash; edit it and your change is lost",
+                 "A fix to a stub's wording goes in <code>weeks/cpp-basics.md</code>, never in the stub"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/core/rules.cpp · a name that does not match", hl: 1, lines: [
+            '// yours -- but the name has to be the promised one',
+            'bool isDark(int row, int col)',
+            '{',
+            '    return false;',
+            '}'
+          ] },
+          term: [["cmd", "$ cmake --build build"],
+                 ["err", "render.cpp.o: undefined reference to"],
+                 ["err", "    `isDarkTile(int, int)'"],
+                 ["err", "collect2: error: ld returned 1 exit status"]],
+          title: "Rename one and the linker tells you",
+          body: ["The compiler was happy: <code>isDark</code> is a perfectly good function",
+                 "The <em>linker</em> went looking for the promised name and did not find it",
+                 "The message quotes the exact signature, parameter types included",
+                 "An undefined reference is almost always a spelling, not a logic bug"],
+          action: { do: "Copy each name out of rules.h rather than typing it from memory. A one-letter difference is a linker error, not a compiler error.",
+                    where: "src/core/rules.cpp" } })
+    ]
+  },
+
+  // --- 3 -------------------------------------------------------------------
+  pattern: {
+    label: "3 · Your board",
+    frames: [
+      f({ todo: TODO_P3,
+          board: "checker",
+          caption: "a checkerboard -- the one we do together",
+          term: [["cmd", "$ python tests/scorecard.py cpp-basics"],
+                 ["ok", "LIVE    The board pattern .......... 7 / 7"]],
+          title: "Two rules, and they are the only two tested",
+          body: ["The same cell must always give the <strong>same</strong> answer, every call",
+                 "It must <strong>not</strong> give the same answer everywhere, or the board is flat",
+                 "A pattern that changed between calls would flicker on screen"] }),
+
+      f({ todo: TODO_P3,
+          board: "stripes",
+          caption: "vertical stripes -- also 7 / 7",
+          term: [["cmd", "$ python tests/scorecard.py cpp-basics"],
+                 ["ok", "LIVE    The board pattern .......... 7 / 7"],
+                 ["dim", "# nothing about the pattern itself is graded"]],
+          title: "Anything consistent passes",
+          body: ["One column dark, the next light, all the way across",
+                 "Deterministic, and not one flat colour. That is the whole bar",
+                 "The two tests cannot tell this apart from a checkerboard"] }),
+
+      f({ todo: TODO_P3,
+          board: "diagonal",
+          caption: "diagonal bands -- also 7 / 7",
+          term: [["cmd", "$ python tests/scorecard.py cpp-basics"],
+                 ["ok", "LIVE    The board pattern .......... 7 / 7"],
+                 ["dim", "# stripes, blocks, a diagonal, a band -- your call"]],
+          title: "Make this one yours",
+          body: ["Diagonals, wide blocks, a border, a chequered band across the middle",
+                 "The person next to you should be able to tell your board from theirs",
+                 "This is the one place in the session where the answer is yours to pick"] }),
+
+      f({ todo: TODO_P3,
+          board: "edge",
+          caption: "the outer ring -- what isEdgeTile answers true for",
+          term: [["dim", "# FinishEdgeTile checks the ring and the interior:"],
+                 ["", "  isEdgeTile(0, 0)        true"],
+                 ["", "  isEdgeTile(5, 10)       false"],
+                 ["", "  isEdgeTile(-1, 5)       true   -- off the board"]],
+          title: "The sibling asks a different question",
+          body: ["Same two parameters, same <code>bool</code> return, different question",
+                 "<code>true</code> on the outer ring, <code>false</code> in the interior",
+                 "Off the board counts as edge: the renderer asks about tiles it is about to clip"],
+          action: { do: "Invent your own pattern for isDarkTile, then write isEdgeTile for the border. Run the game and look at it.",
+                    where: "src/core/rules.cpp &mdash; Pair 3" } })
+    ]
+  },
+
+  // --- 4 -------------------------------------------------------------------
+  gold: {
+    label: "4 · The 0-gold bug",
+    frames: [
+      f({ todo: TODO_P2,
+          code: { fn: "src/core/rules.cpp · the version we write first", hl: 3,
+            calc: "7 / 10 → 0,  so cost * 0 → 0",
+            lines: [
+            '// 70% of the cost, rounded down. Or so it reads.',
+            'int sellValue(int cost)',
+            '{',
+            '    return cost * (7 / 10);',
+            '}'
+          ] },
+          term: [["cmd", "$ ./build/holdfast"],
+                 ["err", "# sell an Arrow  (50 gold) ... +0 gold"],
+                 ["err", "# sell a Mortar  (70 gold) ... +0 gold"],
+                 ["dim", "# every tower in the game sells for nothing"]],
+          title: "The arithmetic reads like 70% and is not",
+          body: ["<code>7</code> and <code>10</code> are both <code>int</code>, so <code>7 / 10</code> is <code>0</code>",
+                 "That happens before <code>cost</code> is ever touched &mdash; then <code>cost * 0</code>",
+                 "Python would have said <code>0.7</code>. C++ throws the remainder away",
+                 "Tuesday's Code-Together is where you met this. Here it costs you gold"] }),
+
+      f({ todo: TODO_P2,
+          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 5, lines: [
+            '// cost * (7 / 10) is 0 for every input. These catch it.',
+            'TEST(LiveSellValue, MultipliesBeforeDividing)',
+            '{',
+            '    EXPECT_EQ(sellValue(ARROW_COST), 35);',
+            '    EXPECT_EQ(sellValue(1), 0);',
+            '    EXPECT_EQ(sellValue(3), 2);',
+            '}'
+          ] },
+          term: [["err", "Expected equality of these values:"],
+                 ["err", "  sellValue(3)    Which is: 0"],
+                 ["err", "  2"],
+                 ["err", "[  FAILED  ] LiveSellValue.MultipliesBeforeDividing"]],
+          title: "The test that catches it",
+          body: ["<code>sellValue(3)</code> must be <code>2</code>, which only happens if the multiply came first",
+                 "<code>sellValue(1)</code> is <code>0</code> either way &mdash; one test alone would not have found this",
+                 "A section is all-or-nothing: both tests, or none of its 7 points"] }),
+
+      f({ todo: TODO_P2,
+          panel: [
+            { n: "divide first", what: "7 / 10 → 0  ·  50 × 0 = 0 gold", state: "wrong" },
+            { n: "multiply first", what: "50 × 7 → 350  ·  350 / 10 = 35 gold", state: "good" },
+            { n: "sellValue(90)", what: "630 / 10 = 63 gold", state: "good" },
+            { n: "upgradeCost(5)", what: "150%, same order → 7 gold", state: "good" }
+          ],
+          term: [["cmd", "$ python tests/scorecard.py cpp-basics"],
+                 ["ok", "LIVE    Selling a tower ............ 7 / 7"],
+                 ["ok", "FINISH  Upgrade cost ............... 7 / 7"]],
+          title: "Multiply first, divide second",
+          body: ["Do it in that order and the remainder survives long enough to matter",
+                 "Same operators, same numbers, one pair of parentheses fewer",
+                 "<code>upgradeCost</code> is the identical trap at 150%, and it is yours alone"],
+          action: { do: "Fix sellValue until sellValue(3) is 2, then write upgradeCost so upgradeCost(5) is 7.",
+                    where: "src/core/rules.cpp &mdash; Pair 2" } })
+    ]
+  },
+
+  // --- 5 -------------------------------------------------------------------
+  table: {
+    label: "5 · The shop table",
+    frames: [
+      f({ todo: TODO_P4,
+          code: { fn: "src/game/main.cpp · mine", hl: 2, lines: [
+            '// the terminal gets the table; the window gets the board',
+            'std::cout << "\\n=== Holdfast -- Tower Shop ===\\n";',
+            'printShopTable();',
+            'std::cout << std::endl;',
+            '',
+            'InitWindow(COLS * TILE_SIZE, ROWS * TILE_SIZE + 120, "Holdfast");'
+          ] },
+          term: [["cmd", "$ ./build/holdfast"],
+                 ["", "=== Holdfast -- Tower Shop ==="],
+                 ["dim", "# nothing. The stub prints no lines at all."]],
+          title: "The shop earns a terminal",
+          body: ["<code>std::setw</code> has no meaning in a graphics window, so the price list prints",
+                 "Called once, before the window opens",
+                 "<code>printShopTable</code> returns <code>void</code> &mdash; it prints, it does not answer"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 3, lines: [
+            '// every line the same width, or setw was not used',
+            'while (std::getline(lines, line)) {',
+            '    if (width == 0) { width = line.size(); }',
+            '    EXPECT_EQ(line.size(), width);',
+            '    EXPECT_NE(line.find("gold"), std::string::npos);',
+            '}'
+          ] },
+          term: [["err", "Arrow 50 gold"],
+                 ["err", "Cannon 90 gold"],
+                 ["err", "  line.size()  Which is: 14    width  Which is: 13"],
+                 ["err", "[  FAILED  ] LiveShopTable.ColumnsLineUp"]],
+          title: "The test measures the line, not the look",
+          body: ["Every printed line must be the <strong>same number of characters</strong>",
+                 "Three names of different lengths cannot manage that on their own",
+                 "Three rows, each naming its tower, each ending in <code>gold</code>"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "tests/test_cpp_basics.cpp · the sibling's test", hl: 2, lines: [
+            '// the two tables have to line up with EACH OTHER',
+            '// the unit differs, so the whole line cannot be compared',
+            'EXPECT_EQ(x.find(" gold"), y.find(" dmg"))',
+            '    << "the number column ends in a different place";'
+          ] },
+          term: [["ok", "Arrow                  50 gold"],
+                 ["ok", "Cannon                 90 gold"],
+                 ["ok", "Mortar                 70 gold"],
+                 ["dim", "# 30 characters each. setw did that, not the space bar."]],
+          title: "And the sibling has to match it",
+          body: ["<code>std::setw</code> on the name <em>and</em> on the number &mdash; it is not sticky",
+                 "<code>std::left</code> and <code>std::right</code> <em>are</em> sticky, so name the one you want each time",
+                 "<code>printTowerTable</code> must use the <strong>same widths</strong> and end in <code>dmg</code>"],
+          action: { do: "Print the shop table so every line is the same width, then the tower table with the same widths and dmg instead of gold.",
+                    where: "src/core/rules.cpp &mdash; Pair 4" } })
+    ]
+  },
+
+  // --- 6 -------------------------------------------------------------------
+  score: {
+    label: "6 · Score it",
+    frames: [
+      f({ todo: TODO_SUB,
+          panel: [
+            { n: "Pair 1", what: "towerCost  ·  towerDamage", state: "good" },
+            { n: "Pair 2", what: "sellValue  ·  upgradeCost", state: "good" },
+            { n: "Pair 3", what: "isDarkTile  ·  isEdgeTile", state: "good" },
+            { n: "Pair 4", what: "printShopTable  ·  printTowerTable", state: "good" }
+          ],
+          term: [["cmd", "$ python tests/scorecard.py"],
+                 ["err", "Which session? No default. One of:"],
+                 ["", "  cpp-basics"],
+                 ["cmd", "$ python tests/scorecard.py cpp-basics"]],
+          title: "The session name is not optional",
+          body: ["A bare run asks instead of guessing, on purpose",
+                 "A wrong guess prints a wrong total, and the screenshot <em>is</em> the submission",
+                 "<code>cpp-basics</code> is also the branch, the tag and the test file's name"] }),
+
+      f({ todo: TODO_SUB,
+          panel: [
+            { n: "Pair 1", what: "towerCost  ·  towerDamage", state: "good" },
+            { n: "Pair 2", what: "sellValue  ·  upgradeCost", state: "good" },
+            { n: "Pair 3", what: "isDarkTile  ·  isEdgeTile", state: "good" },
+            { n: "Pair 4", what: "printShopTable  ·  printTowerTable", state: "good" }
+          ],
+          term: [["", "Student   Ada Lovelace"],
+                 ["", "Repo      holdfast-ada"],
+                 ["err", "Pushed    NO -- 3 commits not on GitHub"]],
+          title: "Check the header before you screenshot",
+          body: ["Name, email and repo are stamped from <code>git</code> &mdash; you never type them",
+                 "A borrowed screenshot therefore shows somebody else's name",
+                 "If <code>Pushed</code> says <code>NO</code>, run <code>git push</code> and screenshot it again"] }),
+
+      f({ todo: TODO_SUB,
+          panel: [
+            { n: "Pair 1", what: "towerCost 7  ·  towerDamage 7", state: "good" },
+            { n: "Pair 2", what: "sellValue 7  ·  upgradeCost 7", state: "good" },
+            { n: "Pair 3", what: "isDarkTile 7  ·  isEdgeTile 7", state: "good" },
+            { n: "Pair 4", what: "printShopTable 7  ·  printTowerTable 7", state: "good" }
+          ],
+          term: [["ok", "LIVE    sections ....... 28 / 28"],
+                 ["ok", "FINISH  sections ....... 28 / 28"],
+                 ["ok", "TOTAL                    56 / 56"],
+                 ["dim", "# plus 4 on the Canvas rubric: commit and push"]],
+          title: "56 for the code, 4 for the hygiene, 60 in all",
+          body: ["Four <code>LIVE</code> sections for what the class wrote together",
+                 "Four <code>FINISH</code> siblings for what you wrote alone",
+                 "All-or-nothing per section: both of its tests, or none of its 7 points"],
+          action: { do: "Screenshot the scorecard, tag the work with git tag cpp-basics && git push origin cpp-basics, and upload the image to Canvas.",
+                    where: "due Wednesday 11:59 PM, and it locks then &mdash; no late work" } })
+    ]
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Syntax colouring. Strings are lifted out first so a keyword inside one is
+// not painted, and the comment is split off after that, so a // inside a
+// string cannot swallow the rest of the line.
+// ---------------------------------------------------------------------------
+var KW = /\b(if|else|switch|case|default|break|return|for|while|do|const|static_cast|true|false)\b/g;
+var TY = /\b(int|double|char|bool|void|std|string)\b/g;
+var NUM = /\b(\d+\.?\d*)\b/g;
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function paint(line) {
+  var s = esc(line);
+  if (/^\s*#/.test(line)) return '<span class="c-pre">' + s + "</span>";
+
+  // Placeholders are LETTERS, not digits: a numeric placeholder would be
+  // repainted by the number rule below and come back as nested spans.
+  var held = [];
+  s = s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, function (m) {
+    held.push(m);
+    return "\u0001" + String.fromCharCode(65 + held.length - 1) + "\u0002";
+  });
+
+  var com = "";
+  var at = s.indexOf("//");
+  if (at >= 0) { com = s.slice(at); s = s.slice(0, at); }
+
+  s = s.replace(KW, '<span class="c-kw">$1</span>')
+       .replace(TY, '<span class="c-typ">$1</span>')
+       .replace(NUM, '<span class="c-num">$1</span>');
+  if (com) s += '<span class="c-com">' + com + "</span>";
+
+  return s.replace(/\u0001([A-Z])\u0002/g, function (m, c) {
+    return '<span class="c-str">' + held[c.charCodeAt(0) - 65] + "</span>";
+  });
+}
+
+function renderCode(fr) {
+  var box = el("div", "codebox");
+  box.appendChild(el("div", "fn", fr.code.fn));
+  var body = el("div", "body");
+  fr.code.lines.forEach(function (line, i) {
+    var hit = i === fr.code.hl;
+    var ln = el("div", "ln" + (hit ? " hl" : ""));
+    if (hit) {
+      ln.appendChild(el("span", "src", paint(line)));
+      if (fr.code.calc) ln.appendChild(el("span", "calc", esc(fr.code.calc)));
+    } else {
+      ln.innerHTML = paint(line);
+    }
+    body.appendChild(ln);
+  });
+  box.appendChild(body);
+  return box;
+}
+
+/* The board, drawn from BOARDS data. 20 x 12 at 14px fits inside the .pipe's
+   own min-height, so this pane is the same height on every board step. */
+function renderBoard(fr) {
+  var pipe = el("div", "pipe");
+  var win = el("div", "boardwin");
+  win.appendChild(el("div", "bar", "HOLDFAST — localhost:6080"));
+  var grid = el("div", "board");
+  BOARDS[fr.board].forEach(function (row) {
+    for (var c = 0; c < row.length; c++) {
+      grid.appendChild(el("span", row[c] === "#" ? "dk" : "lt"));
+    }
+  });
+  win.appendChild(grid);
+  pipe.appendChild(win);
+  pipe.appendChild(el("p", "boardcap", fr.caption));
+  return pipe;
+}
+
+/* Rows of boxes: the orders of evaluation, and the four pairs. */
+function renderPanel(fr) {
+  var pipe = el("div", "pipe");
+  fr.panel.forEach(function (p) {
+    var row = el("div", "stageRow");
+    var box = el("div", "box wide" + (p.state === "good" ? " good" : "") +
+                        (p.state === "wrong" ? " wrong" : ""));
+    box.appendChild(el("div", "nm", p.n));
+    box.appendChild(el("div", "meta", p.what));
+    row.appendChild(box);
+    pipe.appendChild(row);
+  });
+  return pipe;
+}
+
+function render() {
+  var fr = frames()[state.i];
+  var stage = document.getElementById("stage");
+  stage.innerHTML = "";
+
+  renderTodo(fr, stage);
+
+  var grid = el("div", "stage");
+  grid.appendChild(fr.code ? renderCode(fr)
+                   : fr.board ? renderBoard(fr) : renderPanel(fr));
+  grid.appendChild(renderSide(fr));
+  stage.appendChild(grid);
+
+  updateControls();
+}
+
+/* @stepper:js */
+/* stepper.js -- the shared engine behind every CS 1410 stepper.
+ *
+ * Do not edit this inside a stepper. Edit it HERE, then run
+ * `python scripts/build_steppers.py`, which inlines it between the
+ * @stepper:js markers. `--check` reports drift. Same contract as stepper.css.
+ *
+ * Why this exists: the navigation logic was written out four times, once per
+ * stepper. Adding "the arrow keys run the whole deck" meant four edits, one of
+ * which had to be hand-adapted because that file used different variable
+ * names -- and that file turned out to have no keyboard navigation at all,
+ * which nobody had noticed. With two steppers a week coming, that is the
+ * failure mode this file prevents.
+ *
+ * ---------------------------------------------------------------------------
+ * THE CONTRACT. A stepper supplies two things and gets everything else:
+ *
+ *   var MODES = { key: { label: "1 - Title", frames: [ ... ] }, ... }
+ *       Frame order matches the #tabs buttons' data-mode order.
+ *       Every frame: title, body (array of bullets), term, todo.
+ *       Optional: more (a "Going deeper" card), action (the hand-off).
+ *
+ *   function render() { ... }
+ *       Draws one step into #stage. Reads the current frame from
+ *       frames()[state.i]. MUST call updateControls() last.
+ *
+ * Then call boot() at the end of the script.
+ * ---------------------------------------------------------------------------
+ */
+
+var state = { mode: null, i: 0, timer: null };
+
+function el(tag, cls, html) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html !== undefined && html !== null) n.innerHTML = html;
+  return n;
+}
+
+/* Bullets, never a paragraph -- these are read off a projector from the back
+ * of a room. A string still renders, so an old frame does not explode, but
+ * verify_stepper.js fails anything over 30 words. */
+function asList(body) {
+  if (!Array.isArray(body)) return el("p", null, body);
+  var ul = el("ul", "blist");
+  body.forEach(function (b) { ul.appendChild(el("li", null, b)); });
+  return ul;
+}
+
+/* One card per step.
+ *
+ * A frame carrying the explanation, the optional "Going deeper" card and the
+ * "Your turn" hand-off stacks three cards plus a terminal, which does not fit
+ * on a projector screen. So it becomes consecutive steps, one card each, all
+ * sharing the same code, diagram, terminal and TODO bar: the left half of the
+ * screen does not move, only the card changes.
+ *
+ * Done here rather than in the data so every tab gets it free, no frame is
+ * written twice, and each stepper's self-test still sees frames as authored.
+ */
+function expand(list) {
+  var out = [];
+  list.forEach(function (fr) {
+    var tail = [];
+    if (fr.more) tail.push("more");
+    if (fr.action) tail.push("action");
+    if (!tail.length) { out.push(fr); return; }
+    var head = {};
+    Object.keys(fr).forEach(function (k) {
+      if (k !== "more" && k !== "action") head[k] = fr[k];
+    });
+    out.push(head);
+    tail.forEach(function (which) {
+      var step = {};
+      Object.keys(head).forEach(function (k) {
+        if (k !== "title" && k !== "body") step[k] = head[k];
+      });
+      step[which] = fr[which];
+      out.push(step);
+    });
+  });
+  return out;
+}
+
+function frames() {
+  return MODES[state.mode] ? expand(MODES[state.mode].frames) : [];
+}
+
+/* The TODO bar: which TODO this step serves, on every step.
+ *
+ * The tabs are free to follow the teaching rather than the TODO list -- CT0's
+ * two best tabs are failure modes, not TODOs -- so this is what keeps "where
+ * am I" unambiguous. verify_stepper.js fails a code step without one.
+ */
+function renderTodo(fr, into) {
+  if (!fr.todo) return;
+  var tb = el("div", "todobar");
+  tb.appendChild(el("span", "tag", "THIS STEP IS FOR"));
+  tb.appendChild(el("span", "what", fr.todo));
+  into.appendChild(tb);
+}
+
+/* The whole right-hand pane: terminal, then one card.
+ *
+ * Identical in every stepper, which is why it lives here. The card is
+ * singular by the time this runs -- expand() has already split a frame
+ * carrying several into consecutive steps.
+ */
+function renderSide(fr) {
+  var side = el("div", "side");
+
+  if (fr.term) {
+    var tw = el("div", "termwrap");
+    tw.appendChild(el("div", "tlabel", "TERMINAL"));
+    var term = el("div", "term");
+    fr.term.forEach(function (pair) {
+      var s = document.createElement("span");
+      if (pair[0]) s.className = pair[0];
+      s.textContent = pair[1] + "\n";
+      term.appendChild(s);
+    });
+    tw.appendChild(term);
+    side.appendChild(tw);
+  }
+
+  if (fr.body) {
+    var card = el("div", "card");
+    card.appendChild(el("h3", null, fr.title));
+    card.appendChild(asList(fr.body));
+    side.appendChild(card);
+  }
+
+  // Optional depth, kept out of the main explanation so a student who just
+  // wants to write the code can skip it and one who asked "but why?" gets a
+  // real answer rather than "you will see later".
+  if (fr.more) {
+    var mc = el("div", "card deeper");
+    mc.appendChild(el("h3", null, "&#8627; Going deeper &mdash; optional"));
+    mc.appendChild(asList(fr.more));
+    side.appendChild(mc);
+  }
+
+  // The hand-off. A tab that explains something and then leaves the student
+  // on the last slide has not finished its job.
+  if (fr.action) {
+    var ac = el("div", "card action");
+    ac.appendChild(el("h3", null, "&#9654; Your turn"));
+    ac.appendChild(el("p", null, fr.action.do));
+    var where = fr.action.where || fr.action.whereto;
+    if (where) ac.appendChild(el("div", "where", where));
+    if (fr.action.note) ac.appendChild(el("p", null, fr.action.note));
+    side.appendChild(ac);
+  }
+  return side;
+}
+
+function tabBtns() {
+  return Array.prototype.slice.call(
+    document.querySelectorAll("#tabs [data-mode]"));
+}
+
+function tabIndex() {
+  var at = -1;
+  tabBtns().forEach(function (b, n) {
+    if (b.getAttribute("data-mode") === state.mode) at = n;
+  });
+  return at;
+}
+
+function showTab(btn, atEnd) {
+  stop();
+  state.mode = btn.getAttribute("data-mode");
+  tabBtns().forEach(function (o) {
+    o.setAttribute("aria-selected", String(o === btn));
+  });
+  state.i = atEnd ? Math.max(0, frames().length - 1) : 0;
+  render();
+}
+
+/* Run off the end of a tab and into the next one.
+ *
+ * Presenting means holding the right arrow and talking. Stopping dead on the
+ * last step of every tab breaks that: you look down, find the mouse, and click
+ * the next tab in front of the room. So the arrows treat the whole stepper as
+ * one sequence.
+ *
+ * It does NOT wrap at the two real ends -- a held key cycling back to the
+ * beginning mid-explanation would be worse than stopping. Tab order comes from
+ * the DOM, so it cannot drift from the buttons the student can see.
+ */
+function advance(delta) {
+  stop();
+  var next = state.i + delta;
+  if (next >= 0 && next < frames().length) { go(next); return; }
+  var btns = tabBtns(), at = tabIndex(), to = at + delta;
+  if (at < 0 || to < 0 || to >= btns.length) return;
+  showTab(btns[to], delta < 0);
+}
+
+function go(i) {
+  state.i = Math.max(0, Math.min(frames().length - 1, i));
+  render();
+}
+
+function stop() {
+  if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  var p = document.getElementById("play");
+  if (p) p.innerHTML = "&#9654; Play";
+}
+
+function play() {
+  if (state.timer) { stop(); return; }
+  if (state.i >= frames().length - 1) state.i = 0;
+  document.getElementById("play").innerHTML = "&#10073;&#10073; Pause";
+  state.timer = setInterval(function () {
+    if (state.i >= frames().length - 1) { stop(); return; }
+    go(state.i + 1);
+  }, 1900);
+}
+
+/* The step counter and the button states. Every render() ends by calling this.
+ *
+ * Prev/Next disable only at the two ends of the WHOLE deck, matching the
+ * arrows: a greyed-out Next beside an arrow key that still works is a lie
+ * about where the end is. First/Last stay scoped to the current tab, which is
+ * what their labels promise.
+ */
+function updateControls() {
+  var n = frames().length, at = tabIndex(), last = tabBtns().length - 1;
+  var count = document.getElementById("frameCount");
+  if (count) {
+    count.textContent = (MODES[state.mode] ? MODES[state.mode].label : "") +
+                        "  -  step " + (state.i + 1) + " of " + n;
+  }
+  function set(id, off) {
+    var b = document.getElementById(id);
+    if (b) b.disabled = off;
+  }
+  set("first", state.i === 0);
+  set("last", state.i >= n - 1);
+  set("prev", state.i === 0 && at <= 0);
+  set("next", state.i >= n - 1 && at >= last);
+  set("play", false);
+}
+
+function wireControls() {
+  function on(id, fn) {
+    var b = document.getElementById(id);
+    if (b) b.addEventListener("click", fn);
+  }
+  on("first", function () { stop(); go(0); });
+  on("prev", function () { advance(-1); });
+  on("next", function () { advance(1); });
+  on("last", function () { stop(); go(frames().length - 1); });
+  on("play", play);
+
+  tabBtns().forEach(function (b) {
+    b.addEventListener("click", function () { showTab(b, false); });
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") { advance(1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft") { advance(-1); e.preventDefault(); }
+    else if (e.key === " ") { play(); e.preventDefault(); }
+  });
+}
+
+/* Start on whichever tab the markup marks selected, or the first one. */
+function boot() {
+  var btns = tabBtns();
+  var chosen = btns.filter(function (b) {
+    return b.getAttribute("aria-selected") === "true";
+  })[0] || btns[0];
+  state.mode = chosen ? chosen.getAttribute("data-mode") : null;
+  btns.forEach(function (o) {
+    o.setAttribute("aria-selected", String(o === chosen));
+  });
+  wireControls();
+  render();
+}
+/* /@stepper:js */
+
+// ---------------------------------------------------------------------------
+// Self-test: the page proves its own frames are coherent, so a typo shows up
+// here rather than in front of a class. Silent when it passes.
+// ---------------------------------------------------------------------------
+(function selftest() {
+  var fails = [];
+  function ok(cond, msg) { if (!cond) fails.push(msg); }
+
+  Object.keys(MODES).forEach(function (m) {
+    var fs = MODES[m].frames;
+    ok(fs.length > 0, m + ": has frames");
+    fs.forEach(function (fr, i) {
+      var where = m + " frame " + (i + 1);
+      var panes = (fr.code ? 1 : 0) + (fr.board ? 1 : 0) + (fr.panel ? 1 : 0);
+      ok(!!fr.title && Array.isArray(fr.body), where + ": title and bullet body");
+      ok(!!fr.todo, where + ": every step must name its TODO");
+      ok(Array.isArray(fr.term) && fr.term.length > 0, where + ": terminal output");
+      ok(panes === 1, where + ": exactly one of code / board / panel");
+      ok(fr.body.length <= 4, where + ": at most 4 bullets on a card");
+      ok(fr.term.length <= 5, where + ": at most 5 terminal lines");
+      if (fr.code) {
+        ok(Array.isArray(fr.code.lines) && fr.code.lines.length > 0,
+           where + ": code has lines");
+        ok(fr.code.hl >= 0 && fr.code.hl < fr.code.lines.length,
+           where + ": hl is inside the listing");
+        ok(!!fr.code.fn, where + ": code names its file");
+        // 1.35rem at line-height 1.6 is ~35px a line. Ten lines plus the
+        // header, the TODO bar and the page furniture is the 760px screen.
+        ok(fr.code.lines.length <= 10,
+           where + ": " + fr.code.lines.length + " code lines, 10 is the ceiling");
+      }
+      if (fr.board) {
+        ok(!!BOARDS[fr.board], where + ": board names a real picture");
+        ok(!!fr.caption, where + ": a board step must say what it is showing");
+      }
+    });
+    var last = fs[fs.length - 1];
+    ok(!!last.action, m + ": last frame must hand off");
+    if (last.action) {
+      ok(!!last.action.do && !!last.action.where,
+         m + ": hand-off needs an instruction and a location");
+    }
+  });
+
+  // Every board picture is 12 rows of 20, and the flat one is the only one
+  // with a single colour -- the test the students' own boards have to pass.
+  Object.keys(BOARDS).forEach(function (k) {
+    var rows = BOARDS[k];
+    ok(rows.length === 12, "board " + k + ": 12 rows");
+    rows.forEach(function (r) { ok(r.length === 20, "board " + k + ": 20 columns"); });
+    var dark = rows.join("").split("#").length - 1;
+    if (k === "flat") ok(dark === 0, "board flat: must be one colour");
+    else ok(dark > 0 && dark < 240, "board " + k + ": must not be one flat colour");
+  });
+
+  // ---- the publish rule, machine-checked ---------------------------------
+  // diagrams/ is PUBLIC and the FINISH bucket is graded, so this page shows
+  // the effect of each line a student writes and never the line. These four
+  // strings are the four answers; if one appears, the stepper has become an
+  // answer key and must not be published.
+  var all = JSON.stringify(MODES);
+  [["cost * 7", "sellValue / upgradeCost"],
+   ["(row + col) %", "isDarkTile"],
+   ["row >= ROWS - 1", "isEdgeTile"],
+   ["setw(18)", "printShopTable / printTowerTable"]].forEach(function (p) {
+    ok(all.indexOf(p[0]) < 0,
+       "PUBLISH RULE: \"" + p[0] + "\" gives away " + p[1] +
+       " -- a game stepper shows the effect, never the line");
+  });
+  // The planted bug is the one body that may appear, because it is the bug.
+  ok(all.indexOf("cost * (7 / 10)") >= 0,
+     "tab 4: the 0-gold version must be shown, or the session has no bug to fix");
+
+  // Tab 1 is flat THEN patterned. Reversed, the boundary lesson disappears.
+  ok(MODES.boundary.frames[1].board === "flat" &&
+     MODES.boundary.frames[2].board === "checker",
+     "tab 1: the flat board must come before the patterned one");
+
+  var node = document.getElementById("selftest");
+  if (!fails.length) { node.style.display = "none"; return; }
+  node.style.display = "";
+  node.style.color = "#c0392b";
+  node.style.fontWeight = "700";
+  node.textContent = "Stepper self-test: " + fails.length + " problem(s) -- " + fails.join("; ");
+})();
+
+boot();
+</script>
+</body>
+</html>
