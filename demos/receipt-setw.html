@@ -316,7 +316,7 @@ var MODES = {
             'std::cout << std::setw(10) << "Coffee" << "|\\n";'
           ], hl: 0 },
           out: ["    Coffee|"], width: 10,
-          term: [["cmd", "$ ./build/receipt"], ["", "    Coffee|"]] }),
+          term: [["cmd", "$ ./build/ct1"], ["", "    Coffee|"]] }),
       f({ title: "Change the number, change the gap",
           body: [
             "Same string, wider field",
@@ -328,7 +328,7 @@ var MODES = {
             'std::cout << std::setw(14) << "Coffee" << "|\\n";'
           ], hl: 0 },
           out: ["        Coffee|"], width: 14,
-          term: [["cmd", "$ ./build/receipt"], ["", "        Coffee|"]] }),
+          term: [["cmd", "$ ./build/ct1"], ["", "        Coffee|"]] }),
       f({ title: "setw never cuts anything off",
           body: [
             "&ldquo;Espresso&rdquo; is eight characters in a field of four",
@@ -341,10 +341,10 @@ var MODES = {
             'std::cout << std::setw(4) << "Espresso" << "|\\n";'
           ], hl: 0 },
           out: ["Espresso|"], width: 4,
-          term: [["cmd", "$ ./build/receipt"], ["", "Espresso|"],
+          term: [["cmd", "$ ./build/ct1"], ["", "Espresso|"],
                  ["warn", "# eight characters in a four-wide field. No error, no truncation."]],
-          action: { do: "Pick a width wider than your longest item name",
-                    where: "src/receipt.cpp &mdash; the NAME_WIDTH constant" } })
+          action: { do: "Pick a field width wider than your longest value, so nothing ever overflows its column.",
+                    where: "src/basics.cpp &mdash; Part 5, printScoreRow" } })
     ]
   },
 
@@ -365,7 +365,7 @@ var MODES = {
             '          << "12.00" << "\\n";'
           ], hl: 0 },
           out: [], width: 12,
-          term: [["cmd", "$ ./build/receipt"], ["dim", "# nothing printed yet"]] }),
+          term: [["cmd", "$ ./build/ct1"], ["dim", "# nothing printed yet"]] }),
       f({ title: "The first column is fine",
           body: [
             "Both names sit in a twelve-wide field, right-aligned",
@@ -380,7 +380,7 @@ var MODES = {
             '          << "12.00" << "\\n";'
           ], hl: 1 },
           out: ["      Coffee3.50"], width: 12,
-          term: [["cmd", "$ ./build/receipt"], ["", "      Coffee3.50"]] }),
+          term: [["cmd", "$ ./build/ct1"], ["", "      Coffee3.50"]] }),
       f({ title: "And the prices do not line up",
           body: [
             "<strong><code>setw</code> applies to the next item only</strong>",
@@ -397,7 +397,7 @@ var MODES = {
             '          << "12.00" << "\\n";'
           ], hl: 3 },
           out: ["      Coffee3.50", "         Tea12.00"], width: 12,
-          term: [["cmd", "$ ./build/receipt"], ["", "      Coffee3.50"],
+          term: [["cmd", "$ ./build/ct1"], ["", "      Coffee3.50"],
                  ["", "         Tea12.00"],
                  ["warn", "# look at the RIGHT edge, not the left: 3.50 and 12.00 do not line up"]] }),
       f({ title: "Say it again for every field",
@@ -414,11 +414,11 @@ var MODES = {
             '          << std::setw(8) << "2.00" << "\\n";'
           ], hl: 1 },
           out: ["      Coffee    3.50", "         Tea   12.00"], width: 20,
-          term: [["cmd", "$ ./build/receipt"], ["", "      Coffee    3.50"],
+          term: [["cmd", "$ ./build/ct1"], ["", "      Coffee    3.50"],
                  ["", "         Tea   12.00"],
                  ["dim", "# both lines 20 characters, and the decimal points line up"]],
-          action: { do: "Give every column its own setw, not just the first",
-                    where: "src/receipt.cpp &mdash; printLine()" } })
+          action: { do: "Give every column its own setw, not just the first. printTimesTable needs one on every cell.",
+                    where: "src/basics.cpp &mdash; Part 5, printTimesTable" } })
     ]
   },
 
@@ -437,7 +437,7 @@ var MODES = {
             'std::cout << std::setw(8) << "12.00" << "|\\n";'
           ], hl: 0 },
           out: ["    3.50|", "   12.00|"], width: 8,
-          term: [["cmd", "$ ./build/receipt"], ["", "    3.50|"], ["", "   12.00|"],
+          term: [["cmd", "$ ./build/ct1"], ["", "    3.50|"], ["", "   12.00|"],
                  ["dim", "# decimal points line up"]] }),
       f({ title: "std::left moves the padding",
           body: [
@@ -452,7 +452,7 @@ var MODES = {
             'std::cout << std::setw(12) << "Espresso" << "|\\n";'
           ], hl: 1 },
           out: ["Coffee      |", "Espresso    |"], width: 12,
-          term: [["cmd", "$ ./build/receipt"], ["", "Coffee      |"],
+          term: [["cmd", "$ ./build/ct1"], ["", "Coffee      |"],
                  ["", "Espresso    |"],
                  ["dim", "# one std::left, both lines affected"]] }),
       f({ title: "One line, both directions",
@@ -468,9 +468,9 @@ var MODES = {
             '          << "\\n";'
           ], hl: 0 },
           out: ["Coffee          3.50"], width: 20,
-          term: [["cmd", "$ ./build/receipt"], ["", "Coffee          3.50"]],
-          action: { do: "Use std::left for the name column and std::right for the price",
-                    where: "src/receipt.cpp &mdash; printLine()" } })
+          term: [["cmd", "$ ./build/ct1"], ["", "Coffee          3.50"]],
+          action: { do: "Use std::left for the name and std::right for the number -- 18 wide and 4 wide.",
+                    where: "src/basics.cpp &mdash; Part 5, printScoreRow (TODO 5b)" } })
     ]
   },
 
@@ -490,7 +490,7 @@ var MODES = {
             'std::cout << price << "\\n";'
           ], hl: 1 },
           out: ["3.5"], width: 0,
-          term: [["cmd", "$ ./build/receipt"], ["", "3.5"],
+          term: [["cmd", "$ ./build/ct1"], ["", "3.5"],
                  ["warn", "# not 3.50 -- this is a price with one decimal place"]] }),
       f({ title: "fixed and setprecision together",
           body: [
@@ -505,7 +505,7 @@ var MODES = {
             '          << price << "\\n";'
           ], hl: 1 },
           out: ["3.50"], width: 0,
-          term: [["cmd", "$ ./build/receipt"], ["", "3.50"]] }),
+          term: [["cmd", "$ ./build/ct1"], ["", "3.50"]] }),
       f({ title: "This one IS sticky",
           body: [
             "The second price never mentions <code>setprecision</code> and still prints two decimals",
@@ -520,10 +520,10 @@ var MODES = {
             'std::cout << 2.0 << "\\n";'
           ], hl: 2 },
           out: ["3.50", "2.00"], width: 0,
-          term: [["cmd", "$ ./build/receipt"], ["", "3.50"], ["", "2.00"],
+          term: [["cmd", "$ ./build/ct1"], ["", "3.50"], ["", "2.00"],
                  ["dim", "# one setprecision, both lines. setw would not have done that."]],
-          action: { do: "Set fixed and setprecision(2) once, before the first price",
-                    where: "src/receipt.cpp &mdash; printReceipt()" } })
+          action: { do: "Set fixed and setprecision(2) once, before the first price. main.cpp already does it for you.",
+                    where: "src/main.cpp &mdash; given; you will need it yourself in Lab 1" } })
     ]
   },
 

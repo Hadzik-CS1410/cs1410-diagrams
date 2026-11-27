@@ -235,10 +235,10 @@ table.cmp th { background: #f2f4f7; }
 
   <h1>CT 1 &mdash; C++ basics for Python programmers</h1>
   <p class="sub">
-    You already know how to program. Each tab puts up code from
-    <code>src/basics.cpp</code> and walks <strong>down it one line at a time</strong>
-    &mdash; right arrow for the next line, and the yellow box says what that line
-    does. Part 5, lining up columns, has a stepper of its own.
+    You already know how to program. Each tab puts up code from the assignment
+    and walks <strong>down it one line at a time</strong> &mdash; right arrow for
+    the next line, and the yellow box says what that line does. All eleven
+    functions are here; the <em>setw</em> stepper goes deeper on columns.
   </p>
 
   <div class="tabs" id="tabs">
@@ -249,7 +249,10 @@ table.cmp th { background: #f2f4f7; }
     <button data-mode="branch">5 &middot; if / else if</button>
     <button data-mode="swtch">6 &middot; switch</button>
     <button data-mode="loops">7 &middot; for</button>
-    <button data-mode="score">8 &middot; Score it</button>
+    <button data-mode="whileloop">8 &middot; while</button>
+    <button data-mode="input">9 &middot; Asking for input</button>
+    <button data-mode="columns">10 &middot; Columns</button>
+    <button data-mode="score">11 &middot; Score it</button>
     <span class="spacer"></span>
     <span class="hint">&larr; &rarr; arrow keys step &middot; space plays</span>
   </div>
@@ -346,6 +349,29 @@ var DAYNAME = [
   '}'
 ];
 
+var SECONDSIN = [
+  'int secondsIn(int hours, int minutes, int seconds)',
+  '{',
+  '    return hours * 3600 + minutes * 60 + seconds;',
+  '}'
+];
+
+var MEMBERPRICE = [
+  'const double MEMBER_DISCOUNT_RATE{0.10};   // you name this one',
+  '',
+  'double memberPrice(double price)',
+  '{',
+  '    return price - price * MEMBER_DISCOUNT_RATE;',
+  '}'
+];
+
+var ISPASSING = [
+  'bool isPassing(double percent)',
+  '{',
+  '    return percent >= 60.0;',
+  '}'
+];
+
 var SUMSQ = [
   'int sumOfSquares(int n)',
   '{',
@@ -355,6 +381,57 @@ var SUMSQ = [
   '    }',
   '    return total;',
   '}'
+];
+
+var DIGITCOUNT = [
+  'int digitCount(int n)',
+  '{',
+  '    if (n < 0) { n = -n; }',
+  '    int digits{1};',
+  '    while (n >= 10) {',
+  '        n /= 10;',
+  '        digits++;',
+  '    }',
+  '    return digits;',
+  '}'
+];
+
+// Part 5. The setw STEPPER teaches how setw behaves -- every space drawn as a
+// dot, with a ruler. These two are the functions you write with it, so they
+// belong here: rule 6 wants the lines they are about to type.
+var SCOREROW = [
+  'void printScoreRow(std::string name, int score)',
+  '{',
+  '    std::cout << std::left  << std::setw(18) << name',
+  '              << std::right << std::setw(4)  << score << \'\\n\';',
+  '}'
+];
+
+var TIMESTABLE = [
+  'void printTimesTable(int size)',
+  '{',
+  '    for (int row{1}; row <= size; row++) {',
+  '        for (int col{1}; col <= size; col++) {',
+  '            std::cout << std::setw(4) << row * col;',
+  '        }',
+  '        std::cout << \'\\n\';',
+  '    }',
+  '}'
+];
+
+// src/main.cpp. GIVEN, not a TODO -- but it is the only do-while in CT 1, and
+// it is where std::cin's failed state is taught, so it earns a tab.
+var MAIN_LOOP = [
+  'int size{0};',
+  'do {',
+  '    std::cout << "Times table size (1-12): ";',
+  '    std::cin >> size;',
+  '    if (!std::cin) {',
+  '        std::cin.clear();',
+  '        std::cin.ignore(1000, \'\\n\');',
+  '        size = 0;',
+  '    }',
+  '} while (size < 1 || size > 12);'
 ];
 
 var TODO_P1 = "Part 1 &mdash; <code>average3</code> and <code>secondsIn</code> in <code>src/basics.cpp</code>";
@@ -536,9 +613,32 @@ var MODES = {
           title: "The division happens before the return",
           body: ["Both sides are <code>int</code>, so C++ uses <code>int</code> division and stops there",
                  "Turning <code>1</code> into <code>1.0</code> afterwards cannot invent the lost digits",
-                 "<code>double d = 7 / 2;</code> is <code>3.0</code> for exactly the same reason"],
-          action: { do: "Make one side a double before the division: static_cast<double>(a + b + c) / 3. Then average3(1, 2, 2) is 1.6667.",
-                    where: "src/basics.cpp &mdash; Part 1, average3" } })
+                 "Fix it with <code>static_cast&lt;double&gt;(a + b + c) / 3</code>, and 1.6667 comes back"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · secondsIn, the other Part 1 function", hl: 0,
+                  lines: SECONDSIN },
+          lineNote: "<code>int</code> in, <code>int</code> out &mdash; and this time that is exactly right. Seconds are whole numbers.",
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "secondsIn(1, 2, 3) -> 3723"]],
+          title: "The same types, and no trap at all",
+          body: ["Three <code>int</code> parameters again, but the return is <code>int</code> too",
+                 "Nothing here could lose a decimal, because nothing produces one",
+                 "<code>int</code> is not the problem. <code>int</code> <em>division</em> is"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "src/basics.cpp · secondsIn, the other Part 1 function", hl: 2,
+                  lines: SECONDSIN },
+          lineNote: "Only <code>*</code> and <code>+</code> &mdash; no division anywhere, so the answer is exact.",
+          term: [["", "1 * 3600  +  2 * 60  +  3   ->  3723"],
+                 ["dim", "# going the other way needs both:"],
+                 ["dim", "#   3723 / 60 -> 62 minutes,  3723 % 60 -> 3 seconds"]],
+          title: "Multiply and add are always safe",
+          body: ["<code>*</code> is evaluated before <code>+</code>, the same precedence as in maths",
+                 "Splitting seconds back apart is where <code>/</code> and <code>%</code> come in",
+                 "<code>%</code> behaves like Python's for positive numbers"],
+          action: { do: "Write average3 with the cast and secondsIn without one. Part 1 is 5 of the 24 code points.",
+                    where: "src/basics.cpp &mdash; Part 1" } })
     ]
   },
 
@@ -588,8 +688,31 @@ var MODES = {
           title: "Use the name everywhere the number was",
           body: ["<code>#define</code> is the older way &mdash; the preprocessor swaps the text in",
                  "Its errors quote the number, because by then the name is gone",
-                 "You will meet it in older code. Prefer <code>const</code>"],
-          action: { do: "Define your own MEMBER_DISCOUNT_RATE above memberPrice and use the name. Then try assigning to it, read the error, and delete that line.",
+                 "You will meet it in older code. Prefer <code>const</code>"] }),
+
+      f({ todo: TODO_P2,
+          code: { fn: "src/basics.cpp · memberPrice, where you name it", hl: 0,
+                  lines: MEMBERPRICE },
+          lineNote: "Your turn to declare one: <code>const</code>, a type, ALL_CAPS, and a <code>{ }</code> value. It goes <strong>above</strong> the function that uses it.",
+          term: [["dim", "# SALES_TAX_RATE was given to you in basics.h"],
+                 ["dim", "# this one you write yourself, right here in basics.cpp"]],
+          title: "Part 2's second function is the same idea, yours",
+          body: ["A constant has to be declared before the code that mentions it",
+                 "<code>0.10</code> and not <code>10</code> &mdash; it is a rate, not a percentage",
+                 "Name it so the function below reads as a sentence"] }),
+
+      f({ todo: TODO_P2,
+          code: { fn: "src/basics.cpp · memberPrice, where you name it", hl: 4,
+                  lines: MEMBERPRICE },
+          lineNote: "<code>-</code>, not <code>+</code> &mdash; a discount comes off. <code>memberPrice(50.0)</code> must be <code>45.0</code>, not <code>55.0</code>.",
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "memberPrice(50.00) -> 45.00"],
+                 ["err", "memberPrice(50.00) -> 55.00   <- + instead of -"]],
+          title: "Same shape as withTax, one sign different",
+          body: ["<code>withTax</code> adds a rate; <code>memberPrice</code> subtracts one",
+                 "Copying the line above and forgetting the sign is the usual slip",
+                 "Both read correctly either way, which is why the test checks the number"],
+          action: { do: "Define MEMBER_DISCOUNT_RATE above memberPrice and use the name. Then try assigning to it, read the error, and delete that line.",
                     where: "src/basics.cpp &mdash; Part 2" } })
     ]
   },
@@ -640,7 +763,31 @@ var MODES = {
           title: "Every path has to return something",
           body: ["<code>=</code> assigns and <code>==</code> compares; <code>if (percent = 60)</code> is always true",
                  "That one is a <em>warning</em>, not an error, so read your warnings",
-                 "<code>isPassing</code> needs no <code>if</code>: a comparison is already a <code>bool</code>"],
+                 "The next function in Part 3 needs no <code>if</code> at all"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/basics.cpp · isPassing — TODO 3c", hl: 0,
+                  lines: ISPASSING },
+          lineNote: "The return type is <code>bool</code>, so this function's whole job is to answer yes or no.",
+          term: [["", "bool isPassing(double percent)"],
+                 ["dim", "# a double in, true or false out"]],
+          title: "A function can answer a question",
+          body: ["Same <code>60</code> boundary as <code>letterGrade</code>'s last branch",
+                 "<code>bool</code> is the type for exactly two outcomes",
+                 "Look at how short the body is allowed to be"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/basics.cpp · isPassing — TODO 3c", hl: 2,
+                  lines: ISPASSING },
+          lineNote: "<code>percent >= 60.0</code> <strong>is</strong> the answer. A comparison already evaluates to <code>true</code> or <code>false</code>, so there is nothing to wrap in an <code>if</code>.",
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "isPassing(72.5) -> 1"],
+                 ["ok", "isPassing(41.0) -> 0"],
+                 ["dim", "# 1 and 0, not true and false -- unless you ask for boolalpha"]],
+          title: "Return the comparison itself",
+          body: ["<code>if (x) return true; else return false;</code> is four lines saying this one",
+                 "The habit matters later: <code>isDarkTile</code> and <code>isEdgeTile</code> are the same shape",
+                 "Both of those are Thursday's Holdfast session"],
           action: { do: "Write letterGrade with the highest grade first, then isPassing with no if in it at all.",
                     where: "src/basics.cpp &mdash; Part 3" } })
     ]
@@ -753,15 +900,205 @@ var MODES = {
           title: "The body is the only line that does work",
           body: ["<code>i</code> exists only between the loop's braces &mdash; that is a <strong>scope</strong>",
                  "Use <code>i</code> after the closing brace and it will not compile",
-                 "<code>digitCount</code> needs a <code>do-while</code>: it must run once even for 0"],
-          action: { do: "Write sumOfSquares with a for loop, then digitCount with a do-while. Check digitCount(0) is 1 before you move on.",
-                    where: "src/basics.cpp &mdash; Part 4" } })
+                 "The next tab is the other half of Part 4: a <code>while</code> loop"],
+          action: { do: "Write sumOfSquares with a for loop. sumOfSquares(3) must be 14, and 0 for anything under 1.",
+                    where: "src/basics.cpp &mdash; Part 4, sumOfSquares" } })
     ]
   },
 
   // --- 8 -------------------------------------------------------------------
+  whileloop: {
+    label: "8 · while",
+    frames: [
+      f({ todo: TODO_P4,
+          code: { fn: "src/basics.cpp · digitCount", hl: -1, lines: DIGITCOUNT },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "digitCount(1410) -> 4"],
+                 ["ok", "digitCount(-25)  -> 2"],
+                 ["ok", "digitCount(0)    -> 1"]],
+          title: "Use while when you cannot count the passes",
+          body: ["A <code>for</code> loop needs to know how far to go; this one does not",
+                 "It divides by 10 until there is nothing left to divide",
+                 "Three of those answers are easy and one is a trap"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "src/basics.cpp · digitCount", hl: 2, lines: DIGITCOUNT },
+          lineNote: "<code>n = -n;</code> makes a negative positive, because &minus;25 has the same two digits as 25. The minus sign is not a digit.",
+          term: [["", "n = -25   ->   n = 25"],
+                 ["", "n = 1410  ->   unchanged"],
+                 ["dim", "# handle the odd input first, then write the normal case once"]],
+          title: "Deal with the awkward input up front",
+          body: ["<code>-25 / 10</code> is <code>-2</code> in C++, so the loop below would misbehave",
+                 "One <code>if</code> at the top is cheaper than a special case inside the loop",
+                 "The whole body can now assume <code>n</code> is zero or positive"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "src/basics.cpp · digitCount", hl: 3, lines: DIGITCOUNT },
+          lineNote: "<code>{1}</code>, not <code>{0}</code> &mdash; every number has at least one digit, including <code>0</code> itself. This is the line that makes <code>digitCount(0)</code> correct.",
+          term: [["", "digits starts at 1"],
+                 ["err", "start it at 0 and digitCount(0) returns 0"],
+                 ["dim", "# 0 is one digit long. Counting from 1 is the whole fix."]],
+          title: "Start the count at one",
+          body: ["Count what you have already, then count what the loop finds",
+                 "Starting at <code>0</code> gives the right answer for every input except <code>0</code>",
+                 "That is the kind of bug a test catches and an eye does not"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "src/basics.cpp · digitCount", hl: 4, lines: DIGITCOUNT },
+          lineNote: "<code>while (n >= 10)</code> &mdash; keep going while there is more than one digit left. Paired with <code>digits{1}</code>, that counts correctly.",
+          term: [["", "n = 1410   >= 10  yes  ->  n = 141,  digits = 2"],
+                 ["", "n = 141    >= 10  yes  ->  n = 14,   digits = 3"],
+                 ["", "n = 14     >= 10  yes  ->  n = 1,    digits = 4"],
+                 ["", "n = 1      >= 10  NO   ->  stop, return 4"]],
+          title: "The condition is checked before every pass",
+          body: ["<code>n /= 10</code> is <code>n = n / 10</code>, and it drops the last digit each time",
+                 "For <code>n = 0</code> the condition is false immediately, so <code>digits</code> stays 1",
+                 "<code>main.cpp</code> has the other kind of loop, and the next tab is it"],
+          action: { do: "Write digitCount with a while loop. Check all three: 1410 is 4, -25 is 2, and 0 is 1.",
+                    where: "src/basics.cpp &mdash; Part 4, digitCount" } })
+    ]
+  },
+
+  // --- 9 -------------------------------------------------------------------
+  input: {
+    label: "9 · Asking for input",
+    frames: [
+      f({ todo: "Part 4 &mdash; <code>src/main.cpp</code>, given to you, not graded",
+          code: { fn: "src/main.cpp · given — the only do-while in CT 1", hl: -1,
+                  lines: MAIN_LOOP },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["", "Times table size (1-12): abc"],
+                 ["", "Times table size (1-12): 99"],
+                 ["", "Times table size (1-12): 5"],
+                 ["ok", "   1   2   3   4   5"]],
+          title: "This one is written for you. Read it anyway",
+          body: ["It is the only <code>do-while</code> in the assignment, and Part 4 is tested on loops",
+                 "It is also the only place <code>std::cin</code> going wrong is handled",
+                 "You will write this shape yourself in Lab 1"] }),
+
+      f({ todo: "Part 4 &mdash; <code>src/main.cpp</code>, given to you, not graded",
+          code: { fn: "src/main.cpp · given — the only do-while in CT 1", hl: 1,
+                  lines: MAIN_LOOP },
+          lineNote: "<code>do</code> &mdash; the body runs <strong>first</strong> and the condition is checked afterwards, so it always runs at least once.",
+          term: [["", "ask  ->  check  ->  ask again?"],
+                 ["dim", "# a plain while would have to ask before the loop as well"]],
+          title: "do-while runs the body before it tests",
+          body: ["Exactly right for \"ask until the answer is valid\": you must ask once",
+                 "A <code>while</code> here would need the same prompt written twice",
+                 "This is the third loop kind, and the last one Part 4 needs"] }),
+
+      f({ todo: "Part 4 &mdash; <code>src/main.cpp</code>, given to you, not graded",
+          code: { fn: "src/main.cpp · given — the only do-while in CT 1", hl: 4,
+                  lines: MAIN_LOOP },
+          lineNote: "<code>if (!std::cin)</code> &mdash; true when the last read <em>failed</em>. Type <code>abc</code> into an <code>int</code> and <code>cin</code> stops working until you reset it.",
+          term: [["", "Times table size (1-12): abc"],
+                 ["err", "# cin is now in a failed state"],
+                 ["err", "# every later read does nothing at all"]],
+          title: "cin remembers that it failed",
+          body: ["<code>std::cin >> size</code> cannot store <code>abc</code> in an <code>int</code>, so it gives up",
+                 "Without the reset below, the program spins forever on the bad text",
+                 "<code>clear()</code> clears the failure; <code>ignore()</code> throws the text away"] }),
+
+      f({ todo: "Part 4 &mdash; <code>src/main.cpp</code>, given to you, not graded",
+          code: { fn: "src/main.cpp · given — the only do-while in CT 1", hl: 9,
+                  lines: MAIN_LOOP },
+          lineNote: "<code>} while (...);</code> &mdash; the <strong>semicolon is required</strong>. A <code>for</code> or <code>while</code> never has one there, and leaving it off is a confusing error.",
+          term: [["", "size = 0   out of range  ->  ask again"],
+                 ["", "size = 99  out of range  ->  ask again"],
+                 ["ok", "size = 5   in range      ->  carry on"]],
+          title: "The test goes at the bottom",
+          body: ["<code>||</code> is <em>or</em>: too small <strong>or</strong> too big means ask again",
+                 "<code>size = 0</code> after a failed read is what forces another pass",
+                 "Trace it once with <code>abc</code> and you have the whole pattern"],
+          action: { do: "Run the program and type abc, then 99, then 5. Watching it recover is the point of reading this file.",
+                    where: "./build/ct1 &mdash; src/main.cpp is given, not a TODO" } })
+    ]
+  },
+
+  // --- 10 ------------------------------------------------------------------
+  columns: {
+    label: "10 · Columns",
+    frames: [
+      f({ todo: TODO_P5,
+          code: { fn: "src/basics.cpp · printScoreRow — TODO 5b", hl: -1,
+                  lines: SCOREROW },
+          term: [["cmd", "$ ./build/ct1"],
+                 ["ok", "Ada                 97"],
+                 ["ok", "Grace Hopper        88"],
+                 ["dim", "# both lines 22 characters. Both edges line up."]],
+          title: "Two values, two fields, one line",
+          body: ["The name is padded on the <strong>right</strong>, the score on the <strong>left</strong>",
+                 "That is what makes a column of them square on both edges",
+                 "The <em>setw</em> stepper draws every one of those spaces as a dot"] }),
+
+      f({ todo: TODO_P5,
+          code: { fn: "src/basics.cpp · printScoreRow — TODO 5b", hl: 2,
+                  lines: SCOREROW },
+          lineNote: "<code>std::left</code> then <code>std::setw(18)</code> &mdash; an 18-wide field with the name at the <em>start</em> of it, padding after.",
+          term: [["", "|Ada               |"],
+                 ["", "|Grace Hopper      |"],
+                 ["dim", "# 18 characters either way, whatever the name's length"]],
+          title: "Pad the name on the right",
+          body: ["<code>std::setw</code> applies to the <strong>next item only</strong> &mdash; it is not sticky",
+                 "<code>std::left</code> <em>is</em> sticky, which is why the next line resets it",
+                 "A name longer than 18 is not truncated; it just pushes the column out"] }),
+
+      f({ todo: TODO_P5,
+          code: { fn: "src/basics.cpp · printScoreRow — TODO 5b", hl: 3,
+                  lines: SCOREROW },
+          lineNote: "<code>std::right</code> again, a fresh <code>std::setw(4)</code>, then the newline. Two fields means two <code>setw</code>s.",
+          term: [["", "|Ada               |  97|"],
+                 ["", "|Grace Hopper      |   8|"],
+                 ["dim", "# right-aligned, so the digits line up on their last digit"]],
+          title: "And the number on the left",
+          body: ["Numbers read as a column when their <strong>right</strong> edges agree",
+                 "Naming <code>std::right</code> explicitly undoes the sticky <code>std::left</code> above",
+                 "<code>'\\n'</code> at the end, because <code>cout</code> never adds one"] }),
+
+      f({ todo: TODO_P5,
+          code: { fn: "src/basics.cpp · printTimesTable", hl: 2,
+                  lines: TIMESTABLE },
+          lineNote: "The outer loop is one <strong>row</strong> of the table &mdash; the same nested-loop shape the game's renderer uses for the board.",
+          term: [["cmd", "$ ./build/ct1"],
+                 ["", "   1   2   3"],
+                 ["", "   2   4   6"],
+                 ["", "   3   6   9"]],
+          title: "A table is a loop inside a loop",
+          body: ["Rows on the outside, columns on the inside, exactly as you read",
+                 "<code>row</code> starts at 1, not 0 &mdash; this is a times table, not an index",
+                 "<code>printTimesTable(3)</code> must print those three lines exactly"] }),
+
+      f({ todo: TODO_P5,
+          code: { fn: "src/basics.cpp · printTimesTable", hl: 4,
+                  lines: TIMESTABLE },
+          lineNote: "<code>std::setw(4)</code> inside the <em>inner</em> loop, so every single cell gets its own. Hoist it out and only the first number is padded.",
+          term: [["", "   1   2   3     with setw(4) per cell"],
+                 ["err", "   1234          setw(4) once, outside"],
+                 ["dim", "# not sticky. Every value you want padded needs its own."]],
+          title: "Every cell needs its own setw",
+          body: ["This is the mistake the <em>setw</em> stepper's tab 2 is built around",
+                 "No space is printed between cells &mdash; the padding <em>is</em> the gap",
+                 "Four wide holds up to a 3-digit product and one space"] }),
+
+      f({ todo: TODO_P5,
+          code: { fn: "src/basics.cpp · printTimesTable", hl: 6,
+                  lines: TIMESTABLE },
+          lineNote: "The newline goes <strong>between</strong> the loops &mdash; after a row finishes, not after every cell. Inside the inner loop it would print one number per line.",
+          term: [["", "   1   2   3"],
+                 ["", "   2   4   6"],
+                 ["err", "put '\\n' in the inner loop and you get 9 lines"]],
+          title: "One newline per row, not per cell",
+          body: ["Which brace it sits inside is the whole difference",
+                 "This is the <code>{ }</code> scope question from tab 1, with a visible answer",
+                 "Run it with <code>size</code> 3 and 12 before you believe it"],
+          action: { do: "Write both Part 5 functions, then open the setw stepper if the columns will not line up -- it draws every space as a dot.",
+                    where: "src/basics.cpp &mdash; Part 5" } })
+    ]
+  },
+
+  // --- 11 ------------------------------------------------------------------
   score: {
-    label: "8 · Score it",
+    label: "11 · Score it",
     frames: [
       f({ todo: TODO_P5,
           parts: [
@@ -774,10 +1111,10 @@ var MODES = {
           term: [["cmd", "$ python3 tests/scorecard.py"],
                  ["ok", "Part 1 .. Part 4                  24 / 24"],
                  ["err", "Part 5: setw formatting            0 / 6"]],
-          title: "Part 5 has a stepper of its own",
-          body: ["Padding is made of spaces, and spaces are invisible in a listing",
-                 "The <em>setw</em> stepper draws every space as a dot, with a ruler above it",
-                 "Do Parts 1&ndash;4 here, then open that one for Part 5"] }),
+          title: "Every function in the assignment is in here",
+          body: ["Parts 1&ndash;4 across tabs 1&ndash;9, Part 5 on tab 10",
+                 "If the columns will not line up, the <em>setw</em> stepper is the one to open",
+                 "It draws every space as a dot, with a character ruler above"] }),
 
       f({ todo: TODO_P5,
           parts: [
@@ -1223,10 +1560,11 @@ function boot() {
         ok(fr.code.hl < 0 || !!fr.lineNote,
            where + ": highlights a line with no lineNote -- a step that points " +
            "at code must say why");
-        // 1.35rem at line-height 1.6 is ~35px a line, and the yellow note
-        // wraps to about two more. Eight lines is the 760px screen.
-        ok(fr.code.lines.length <= 8,
-           where + ": " + fr.code.lines.length + " code lines, 8 is the ceiling");
+        // 1.35rem at line-height 1.6 is ~35px a line. verify_stepper.js now
+        // measures the yellow note too, so ten lines is the real ceiling and
+        // stepper_heights.js is the authority on any given step.
+        ok(fr.code.lines.length <= 10,
+           where + ": " + fr.code.lines.length + " code lines, 10 is the ceiling");
       }
     });
     var last = fs[fs.length - 1];
@@ -1255,10 +1593,12 @@ function boot() {
 
   // Every listing is shared by reference, so a tab cannot quietly hold a stale
   // copy of one another tab has since edited.
-  [DECLS, NARROWING, AVG_BAD, WITHTAX, GRADE, DAYNAME, SUMSQ].forEach(
+  [DECLS, NARROWING, AVG_BAD, SECONDSIN, WITHTAX, MEMBERPRICE, GRADE,
+   DAYNAME, SUMSQ, DIGITCOUNT, ISPASSING, MAIN_LOOP, SCOREROW,
+   TIMESTABLE].forEach(
     function (lines, n) {
       ok(Array.isArray(lines) && lines.length > 0, "listing " + n + " has lines");
-      ok(lines.length <= 8, "listing " + n + " is over the 8-line ceiling");
+      ok(lines.length <= 10, "listing " + n + " is over the 10-line ceiling");
     });
 
   // The teaching points, asserted so an edit cannot quietly undo them.
@@ -1268,8 +1608,11 @@ function boot() {
   // Tab 3 shows the bug; the cast is in the hand-off, not in the listing.
   ok(AVG_BAD.join("\n").indexOf("static_cast") < 0,
      "tab 3: the listing must be the broken version, not the fix");
-  ok(JSON.stringify(MODES.intdiv).indexOf("static_cast<double>") >= 0,
-     "tab 3: the fix must still be named in the hand-off");
+  // ...but the cast has to be named somewhere in the tab, or the surprise has
+  // no resolution. It may be escaped (&lt;double&gt;) in a bullet, so match the
+  // keyword rather than the whole expression.
+  ok(JSON.stringify(MODES.intdiv).indexOf("static_cast") >= 0,
+     "tab 3: the fix must still be named somewhere in the tab");
   // Tab 5's grade chain is highest-first, which is the whole function.
   ok(GRADE[2].indexOf(">= 90") >= 0,
      "tab 5: letterGrade must test 90 first");
