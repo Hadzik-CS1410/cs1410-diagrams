@@ -229,7 +229,12 @@ table.cmp th { background: #f2f4f7; }
 
   <div class="tabs" id="tabs">
     <button data-mode="main" aria-selected="true">1 &middot; What is main.cpp?</button>
-    <button data-mode="why">2 &middot; Why a second file?</button>
+    <!-- data-compare: this tab's job IS to hold several files beside each
+         other -- main.cpp without the include, the header, a hand-written
+         declaration, three callers each with their own copy. There is no one
+         listing to walk down, so it is exempt from rule 6's walk rule.
+         verify:steppers prints every tab that claims this. -->
+    <button data-mode="why" data-compare="true">2 &middot; Why a second file?</button>
     <button data-mode="ok">3 &middot; How a build works</button>
     <button data-mode="compile">4 &middot; Compiler error</button>
     <button data-mode="link">5 &middot; Linker error</button>

@@ -238,7 +238,7 @@ table.cmp th { background: #f2f4f7; }
 .boardwin .bar { color: #8c96a5; font-size: .72rem; font-family: Consolas, monospace;
                  letter-spacing: .06em; margin-bottom: 7px; text-align: center; }
 
-/* The two-orders-of-evaluation panel, and the four-pairs panel. */
+/* The four-pairs panel on the submission tab. */
 .box.good { border-color: var(--green); background: var(--greenBg); }
 .box.wrong { border-color: var(--red); background: var(--redBg); }
 .box.wide { min-width: 100%; }
@@ -251,8 +251,8 @@ table.cmp th { background: #f2f4f7; }
   <p class="sub">
     By the end of the session your game opens a window, draws a board with a
     pattern you invented, and prints a price list in lined-up columns &mdash; with no
-    graphics code of your own. <strong>This walks the scaffolding and the tests.
-    It stops where your function bodies begin.</strong>
+    graphics code of your own. <strong>This walks the scaffolding and the tests
+    a line at a time. It stops where your function bodies begin.</strong>
   </p>
 
   <div class="tabs" id="tabs">
@@ -280,9 +280,9 @@ table.cmp th { background: #f2f4f7; }
 
   <div id="stage"></div>
   <div class="legend" id="legend">
-    Code on the left is <strong>mine</strong> &mdash; the renderer, the header and the
-    tests. Your bodies go in <code>src/core/rules.cpp</code>, and this page does not
-    write them for you.
+    Every listing here is <strong>mine</strong> &mdash; the renderer, the header, the
+    tests. The highlighted line moves down it; the yellow box is about that line.
+    Your own bodies go in <code>src/core/rules.cpp</code>.
   </div>
   <div class="selftest" id="selftest"></div>
 </div>
@@ -291,20 +291,21 @@ table.cmp th { background: #f2f4f7; }
 "use strict";
 
 // ---------------------------------------------------------------------------
-// Every frame is a COMPLETE description of the screen at that step, never a
-// diff -- so stepping backwards is just re-rendering and no state can drift.
+// RULE 6 (templates/stepper/README.md): a code step is ONE LINE, and it says
+// what that line does. Each tab declares ONE listing and walks down it; only
+// `hl` and `lineNote` change between frames.
 //
-//   code:   { fn, lines: [...], hl: index, calc?: "inline annotation" }
-//   board:  a key of BOARDS -- a picture of what the renderer produced
-//   panel:  [ { n, what, state } ] -- rows of boxes
-//   term:   [[class, text], ...]     cmd | err | ok | dim | ""
-//   todo / title / body (bullets) / more? / action?
+//   code:     { fn, lines, hl: index, -1 for none }
+//   lineNote: the yellow THIS STEP box. REQUIRED whenever hl >= 0.
+//   board:    a key of BOARDS -- a picture of what the renderer produced
+//   panel:    [ { n, what, state } ] -- rows of boxes
+//   term:     [[class, text], ...]   cmd | err | ok | dim | ""
 //
 // WHAT THIS FILE MAY NOT CONTAIN. diagrams/ publishes to a PUBLIC GitHub Pages
 // site and the FINISH bucket is graded, so a game stepper demonstrates the
-// EFFECT of the line a student must write, never the line. Every piece of C++
-// below is instructor-owned -- render.cpp, rules.h, tests/ -- or is the bug we
-// plant on purpose and then watch fail. The self-test at the bottom asserts
+// EFFECT of the line a student must write, never the line. Every listing below
+// is instructor-owned -- render.cpp, rules.h, main.cpp, tests/ -- or is the bug
+// we plant on purpose and then watch fail. The self-test at the bottom asserts
 // that none of the four answers has crept in.
 // ---------------------------------------------------------------------------
 
@@ -383,11 +384,69 @@ var BOARDS = {
   ]
 };
 
+// --- the listings, each walked a line at a time ----------------------------
+
+var DRAWBOARD = [
+  '// drawBoard() -- re-delivered every session. Do not edit.',
+  'for (int row{0}; row < ROWS; row++) {',
+  '    for (int col{0}; col < COLS; col++) {',
+  '        DrawRectangle(col * TILE_SIZE, row * TILE_SIZE,',
+  '                      TILE_SIZE, TILE_SIZE,',
+  '                      isDarkTile(row, col) ? DARK : LIGHT);',
+  '    }',
+  '}'
+];
+
+var CONTRACT = [
+  'int  towerCost(int type);            // LIVE',
+  'int  towerDamage(int type);          // FINISH',
+  'int  sellValue(int cost);            // LIVE',
+  'int  upgradeCost(int cost);          // FINISH',
+  'bool isDarkTile(int row, int col);   // LIVE',
+  'bool isEdgeTile(int row, int col);   // FINISH',
+  'void printShopTable();               // LIVE',
+  'void printTowerTable();              // FINISH'
+];
+
+var SELL_BAD = [
+  '// 70% of the cost, rounded down. Or so it reads.',
+  'int sellValue(int cost)',
+  '{',
+  '    return cost * (7 / 10);',
+  '}'
+];
+
+var SELL_TEST = [
+  'TEST(LiveSellValue, MultipliesBeforeDividing)',
+  '{',
+  '    EXPECT_EQ(sellValue(ARROW_COST), 35);',
+  '    EXPECT_EQ(sellValue(1), 0);',
+  '    EXPECT_EQ(sellValue(3), 2);',
+  '}'
+];
+
+var SHOP_CALL = [
+  '// the terminal gets the table; the window gets the board',
+  'std::cout << "\\n=== Holdfast -- Tower Shop ===\\n";',
+  'printShopTable();',
+  'std::cout << std::endl;',
+  '',
+  'InitWindow(COLS * TILE_SIZE, ROWS * TILE_SIZE + 120, "Holdfast");'
+];
+
+var SHOP_TEST = [
+  'while (std::getline(lines, line)) {',
+  '    if (width == 0) { width = line.size(); }',
+  '    EXPECT_EQ(line.size(), width);',
+  '    EXPECT_NE(line.find("gold"), std::string::npos);',
+  '}'
+];
+
 var TODO_P1 = "LIVE <code>towerCost</code> &middot; FINISH <code>towerDamage</code>";
 var TODO_P2 = "LIVE <code>sellValue</code> &middot; FINISH <code>upgradeCost</code>";
 var TODO_P3 = "LIVE <code>isDarkTile</code> &middot; FINISH <code>isEdgeTile</code>";
 var TODO_P4 = "LIVE <code>printShopTable</code> &middot; FINISH <code>printTowerTable</code>";
-var TODO_SUB = "the scorecard screenshot &mdash; this week's submission";
+var TODO_SUB = "the scorecard screenshot &mdash; this session's submission";
 
 function f(o) { return o; }
 
@@ -398,24 +457,50 @@ var MODES = {
     label: "1 · Who draws, who decides",
     frames: [
       f({ todo: TODO_P3,
-          code: { fn: "src/game/render.cpp · mine, not yours", hl: 5, lines: [
-            '// drawBoard() -- re-delivered every week. Do not edit.',
-            'for (int row{0}; row < ROWS; row++) {',
-            '    for (int col{0}; col < COLS; col++) {',
-            '        DrawRectangle(col * TILE_SIZE, row * TILE_SIZE,',
-            '                      TILE_SIZE, TILE_SIZE,',
-            '                      isDarkTile(row, col) ? DARK : LIGHT);',
-            '    }',
-            '}'
-          ] },
+          code: { fn: "src/game/render.cpp · mine, not yours", hl: -1,
+                  lines: DRAWBOARD },
           term: [["cmd", "$ cmake --build build --target holdfast"],
                  ["cmd", "$ ./build/holdfast"],
                  ["dim", "# the window opens at http://localhost:6080"]],
-          title: "The renderer decides nothing",
-          body: ["240 tiles, and one question asked of <strong>your</strong> code per tile",
-                 "<code>render.cpp</code> owns the pixels and owns no rules",
-                 "It does not know which tile is dark. It asks, and draws the answer",
-                 "Change <code>isDarkTile</code> and the screen changes"] }),
+          title: "Eight lines draw the whole board",
+          body: ["This is the only code in the game that draws a tile",
+                 "You never edit it, and it arrives again every session",
+                 "Read it, then we take the three lines that matter"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/game/render.cpp · mine, not yours", hl: 1,
+                  lines: DRAWBOARD },
+          lineNote: "The outer loop runs once per <strong>row</strong> &mdash; <code>ROWS</code> is 12, and it is a constant in <code>rules.h</code>.",
+          term: [["", "row = 0, 1, 2, ... 11"],
+                 ["dim", "# twelve passes, one per row of the board"]],
+          title: "Rows on the outside",
+          body: ["The same three-part <code>for</code> you wrote on Tuesday",
+                 "<code>ROWS</code> comes from <code>rules.h</code>, not a number typed here",
+                 "Change that constant and the board changes size"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/game/render.cpp · mine, not yours", hl: 2,
+                  lines: DRAWBOARD },
+          lineNote: "The inner loop runs once per <strong>column</strong>, for every row &mdash; so the pair runs 12 &times; 20 = <strong>240</strong> times.",
+          term: [["", "(0,0) (0,1) (0,2) ... (0,19)"],
+                 ["", "(1,0) (1,1) (1,2) ... (1,19)"],
+                 ["dim", "# 240 tiles, left to right, top to bottom"]],
+          title: "Columns on the inside",
+          body: ["A loop inside a loop is how you walk a grid",
+                 "You write this exact shape yourself in <code>printTimesTable</code>",
+                 "Every one of those 240 passes asks your code a question"] }),
+
+      f({ todo: TODO_P3,
+          code: { fn: "src/game/render.cpp · mine, not yours", hl: 5,
+                  lines: DRAWBOARD },
+          lineNote: "<code>isDarkTile(row, col)</code> &mdash; <strong>your</strong> function. The renderer asks, and paints whichever colour you answered.",
+          term: [["", "isDarkTile(0, 0)  ->  false  ->  LIGHT"],
+                 ["", "isDarkTile(0, 1)  ->  true   ->  DARK"],
+                 ["dim", "# render.cpp owns the pixels and owns no rules"]],
+          title: "This is the line that calls you",
+          body: ["<code>? :</code> picks one of two values &mdash; a compact <code>if</code>/<code>else</code>",
+                 "<code>src/core/</code> never includes raylib and never draws",
+                 "That boundary is what lets every rule you write be tested with no window"] }),
 
       f({ todo: TODO_P3,
           board: "flat",
@@ -424,7 +509,7 @@ var MODES = {
                  ["ok", "window 960 x 696 -- board, HUD and shop slots drawn"],
                  ["dim", "# nothing is broken. Nothing has been answered either."]],
           title: "Day one: one flat colour",
-          body: ["The stub returns <code>false</code>, so every tile is drawn in the light grass",
+          body: ["The stub returns <code>false</code>, so every tile is drawn in light grass",
                  "The window, the game loop and the HUD already work",
                  "The only thing missing is an answer to \"is this tile dark?\""] }),
 
@@ -435,9 +520,9 @@ var MODES = {
                  ["ok", "window 960 x 696 -- board, HUD and shop slots drawn"],
                  ["dim", "# same 240 calls. Not one line of render.cpp changed."]],
           title: "And this is what your answer changes",
-          body: ["<code>src/core/</code> never includes raylib and never draws a pixel",
-                 "That boundary is what lets every rule you write be tested with no window",
-                 "It holds for the rest of the semester, so get used to the shape"],
+          body: ["One function body, and the whole screen is different",
+                 "This arrangement holds for the rest of the semester",
+                 "It is also why your game logic has unit tests at all"],
           action: { do: "Build and run the game before you write anything, so you have seen the flat board with your own eyes.",
                     where: "cmake --build build --target holdfast && ./build/holdfast" } })
     ]
@@ -448,60 +533,74 @@ var MODES = {
     label: "2 · The contract",
     frames: [
       f({ todo: TODO_P1,
-          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 1, lines: [
-            '// Pair 1 -- pick a value from a type',
-            'int  towerCost(int type);      // LIVE',
-            'int  towerDamage(int type);    // FINISH',
-            '',
-            '// Pair 2 -- integer arithmetic that looks right',
-            'int  sellValue(int cost);      // LIVE',
-            'int  upgradeCost(int cost);    // FINISH'
-          ] },
+          code: { fn: "include/rules.h · mine. Do not edit it.", hl: -1,
+                  lines: CONTRACT },
           term: [["dim", "# LIVE   -- written together, in class"],
                  ["dim", "# FINISH -- the sibling, written alone"],
                  ["dim", "# eight sections of 7 points, all-or-nothing"]],
           title: "Eight declarations, in four pairs",
-          body: ["Each pair is the <strong>same shape twice</strong>: one with the class, one alone",
-                 "By the time you write the sibling you have written it twice already",
-                 "Once in Tuesday's Code-Together, once with the room on Thursday",
-                 "Nothing in the FINISH half is new C++"] }),
+          body: ["Write the bodies in <code>src/core/rules.cpp</code>, which is <strong>yours</strong>",
+                 "<code>rules.h</code> arrives again every session &mdash; edit it and your change is lost",
+                 "Read all eight, then we take one line from each pair"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 0,
+                  lines: CONTRACT },
+          lineNote: "<code>towerCost</code> &mdash; a <code>switch</code> on the type returning <code>ARROW_COST</code>, <code>CANNON_COST</code> or <code>MORTAR_COST</code>, and <code>0</code> for anything else.",
+          term: [["", "towerCost(1)   ->  ARROW_COST"],
+                 ["", "towerCost(9)   ->  0"],
+                 ["dim", "# tower types are plain ints today. Week 4: enum class."]],
+          title: "Pair 1, the LIVE half",
+          body: ["This is the <code>switch</code> shape from Tuesday's <code>dayName</code>",
+                 "Use the constant names, never the numbers",
+                 "<code>default:</code> is what returns 0 for a type that does not exist"] }),
+
+      f({ todo: TODO_P1,
+          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 1,
+                  lines: CONTRACT },
+          lineNote: "<code>towerDamage</code> &mdash; the FINISH sibling. Same <code>switch</code>, same shape, a different table of constants.",
+          term: [["", "towerDamage(1) ->  ARROW_DAMAGE"],
+                 ["", "towerDamage(9) ->  0"],
+                 ["dim", "# by the time you write this you have written it twice"]],
+          title: "Every pair is the same shape twice",
+          body: ["The LIVE half with the class, the FINISH half alone",
+                 "No FINISH half uses C++ that its LIVE half did not",
+                 "That is the design, not a coincidence"] }),
+
+      f({ todo: TODO_P2,
+          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 2,
+                  lines: CONTRACT },
+          lineNote: "<code>sellValue</code> &mdash; 70% of the cost, rounded down. This one has a trap in it, and tab 4 is entirely about it.",
+          term: [["", "sellValue(90)  ->  63     what it should be"],
+                 ["err", "sellValue(90)  ->  0      what we get first"]],
+          title: "Pair 2 is where the bug is planted",
+          body: ["<code>int</code> arithmetic that reads correctly and is not",
+                 "<code>upgradeCost</code> is the same trap at 150%",
+                 "Come back to this line after tab 4 and it will read differently"] }),
 
       f({ todo: TODO_P3,
-          code: { fn: "include/rules.h · pairs 3 and 4", hl: 1, lines: [
-            '// Pair 3 -- a question about a tile',
-            'bool isDarkTile(int row, int col);   // LIVE',
-            'bool isEdgeTile(int row, int col);   // FINISH',
-            '',
-            '// Pair 4 -- a table in aligned columns',
-            'void printShopTable();               // LIVE',
-            'void printTowerTable();              // FINISH'
-          ] },
-          term: [["dim", "# given in rules.h, use the names not the numbers:"],
-                 ["", "  ROWS  COLS  TILE_SIZE"],
-                 ["", "  ARROW_COST  CANNON_COST  MORTAR_COST"],
-                 ["", "  ARROW_DAMAGE  CANNON_DAMAGE  MORTAR_DAMAGE"]],
-          title: "The bodies go in a file that is yours",
-          body: ["Write them in <code>src/core/rules.cpp</code>, which you own from now on",
-                 "<code>rules.h</code> arrives again every week &mdash; edit it and your change is lost",
-                 "A fix to a stub's wording goes in <code>weeks/cpp-basics.md</code>, never in the stub"] }),
+          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 4,
+                  lines: CONTRACT },
+          lineNote: "<code>isDarkTile</code> &mdash; two <code>int</code>s in, one <code>bool</code> out. The renderer calls it 240 times a frame.",
+          term: [["", "isDarkTile(row, col)  ->  true or false"],
+                 ["dim", "# isEdgeTile has the identical signature"]],
+          title: "Pair 3 asks a question about a tile",
+          body: ["A <code>bool</code> function is a question with two answers",
+                 "<code>isEdgeTile</code> asks a different question of the same two numbers",
+                 "Tab 3 shows what each of them looks like on screen"] }),
 
-      f({ todo: TODO_P3,
-          code: { fn: "src/core/rules.cpp · a name that does not match", hl: 1, lines: [
-            '// yours -- but the name has to be the promised one',
-            'bool isDark(int row, int col)',
-            '{',
-            '    return false;',
-            '}'
-          ] },
+      f({ todo: TODO_P4,
+          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 6,
+                  lines: CONTRACT },
+          lineNote: "<code>void</code> &mdash; returns nothing. <code>printShopTable</code> prints; it does not answer, so there is nothing to catch.",
           term: [["cmd", "$ cmake --build build"],
                  ["err", "render.cpp.o: undefined reference to"],
                  ["err", "    `isDarkTile(int, int)'"],
-                 ["err", "collect2: error: ld returned 1 exit status"]],
-          title: "Rename one and the linker tells you",
-          body: ["The compiler was happy: <code>isDark</code> is a perfectly good function",
-                 "The <em>linker</em> went looking for the promised name and did not find it",
-                 "The message quotes the exact signature, parameter types included",
-                 "An undefined reference is almost always a spelling, not a logic bug"],
+                 ["dim", "# ...what you get for renaming one of these eight"]],
+          title: "Pair 4 prints, and the names are a promise",
+          body: ["Rename a function and the compiler is happy; the <em>linker</em> is not",
+                 "The message quotes the exact signature it was promised",
+                 "An undefined reference is nearly always a spelling, not a logic bug"],
           action: { do: "Copy each name out of rules.h rather than typing it from memory. A one-letter difference is a linker error, not a compiler error.",
                     where: "src/core/rules.cpp" } })
     ]
@@ -553,7 +652,7 @@ var MODES = {
           title: "The sibling asks a different question",
           body: ["Same two parameters, same <code>bool</code> return, different question",
                  "<code>true</code> on the outer ring, <code>false</code> in the interior",
-                 "Off the board counts as edge: the renderer asks about tiles it is about to clip"],
+                 "Off the board counts as edge: the renderer asks about tiles it will clip"],
           action: { do: "Invent your own pattern for isDarkTile, then write isEdgeTile for the border. Run the game and look at it.",
                     where: "src/core/rules.cpp &mdash; Pair 3" } })
     ]
@@ -564,58 +663,63 @@ var MODES = {
     label: "4 · The 0-gold bug",
     frames: [
       f({ todo: TODO_P2,
-          code: { fn: "src/core/rules.cpp · the version we write first", hl: 3,
-            calc: "7 / 10 → 0,  so cost * 0 → 0",
-            lines: [
-            '// 70% of the cost, rounded down. Or so it reads.',
-            'int sellValue(int cost)',
-            '{',
-            '    return cost * (7 / 10);',
-            '}'
-          ] },
+          code: { fn: "src/core/rules.cpp · the version we write first", hl: -1,
+                  lines: SELL_BAD },
           term: [["cmd", "$ ./build/holdfast"],
                  ["err", "# sell an Arrow  (50 gold) ... +0 gold"],
                  ["err", "# sell a Mortar  (70 gold) ... +0 gold"],
                  ["dim", "# every tower in the game sells for nothing"]],
-          title: "The arithmetic reads like 70% and is not",
-          body: ["<code>7</code> and <code>10</code> are both <code>int</code>, so <code>7 / 10</code> is <code>0</code>",
-                 "That happens before <code>cost</code> is ever touched &mdash; then <code>cost * 0</code>",
-                 "Python would have said <code>0.7</code>. C++ throws the remainder away",
-                 "Tuesday's Code-Together is where you met this. Here it costs you gold"] }),
+          title: "Five lines, and every tower is worthless",
+          body: ["It compiles, it runs, and no warning is printed",
+                 "The comment says 70% and the code agrees, to the eye",
+                 "The whole bug is one line down"] }),
 
       f({ todo: TODO_P2,
-          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 5, lines: [
-            '// cost * (7 / 10) is 0 for every input. These catch it.',
-            'TEST(LiveSellValue, MultipliesBeforeDividing)',
-            '{',
-            '    EXPECT_EQ(sellValue(ARROW_COST), 35);',
-            '    EXPECT_EQ(sellValue(1), 0);',
-            '    EXPECT_EQ(sellValue(3), 2);',
-            '}'
-          ] },
+          code: { fn: "src/core/rules.cpp · the version we write first", hl: 1,
+                  lines: SELL_BAD },
+          lineNote: "<code>int</code> in, <code>int</code> out &mdash; gold is whole numbers, so there is nowhere for a fraction to live.",
+          term: [["", "int sellValue(int cost)"],
+                 ["dim", "# both the parameter and the return are int"]],
+          title: "The signature is all ints",
+          body: ["Which is right: you cannot have 34.7 gold",
+                 "But it means every division in here is <code>int</code> division",
+                 "On Tuesday that cost you a decimal. Here it costs the player gold"] }),
+
+      f({ todo: TODO_P2,
+          code: { fn: "src/core/rules.cpp · the version we write first", hl: 3,
+                  lines: SELL_BAD },
+          lineNote: "<code>(7 / 10)</code> is evaluated <strong>first</strong>, and it is <code>0</code>. Then <code>cost * 0</code> is <code>0</code> &mdash; for every tower in the game.",
+          term: [["", "7 / 10      ->  0     int / int"],
+                 ["", "50 * 0      ->  0     every tower"],
+                 ["dim", "# Python would have said 0.7 and this would have worked"]],
+          title: "The parentheses are the bug",
+          body: ["Both <code>7</code> and <code>10</code> are <code>int</code>, so C++ answers <code>0</code>",
+                 "The multiply never had a chance &mdash; it was handed a zero",
+                 "Nothing is a typo. The arithmetic is just in the wrong order"] }),
+
+      f({ todo: TODO_P2,
+          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 2,
+                  lines: SELL_TEST },
+          lineNote: "<code>sellValue(ARROW_COST)</code> must be <code>35</code> &mdash; the test uses the constant, not <code>50</code>, so changing a price cannot break it.",
           term: [["err", "Expected equality of these values:"],
-                 ["err", "  sellValue(3)    Which is: 0"],
-                 ["err", "  2"],
-                 ["err", "[  FAILED  ] LiveSellValue.MultipliesBeforeDividing"]],
-          title: "The test that catches it",
-          body: ["<code>sellValue(3)</code> must be <code>2</code>, which only happens if the multiply came first",
-                 "<code>sellValue(1)</code> is <code>0</code> either way &mdash; one test alone would not have found this",
-                 "A section is all-or-nothing: both tests, or none of its 7 points"] }),
+                 ["err", "  sellValue(ARROW_COST)   Which is: 0"],
+                 ["err", "  35"]],
+          title: "The test says what the game could not",
+          body: ["The game showed <code>+0 gold</code>; the test names the number it wanted",
+                 "A section is all-or-nothing: both of its tests, or none of its 7 points",
+                 "There is a second test two lines down, and it is the sharper one"] }),
 
       f({ todo: TODO_P2,
-          panel: [
-            { n: "divide first", what: "7 / 10 → 0  ·  50 × 0 = 0 gold", state: "wrong" },
-            { n: "multiply first", what: "50 × 7 → 350  ·  350 / 10 = 35 gold", state: "good" },
-            { n: "sellValue(90)", what: "630 / 10 = 63 gold", state: "good" },
-            { n: "upgradeCost(5)", what: "150%, same order → 7 gold", state: "good" }
-          ],
-          term: [["cmd", "$ python tests/scorecard.py cpp-basics"],
-                 ["ok", "LIVE    Selling a tower ............ 7 / 7"],
-                 ["ok", "FINISH  Upgrade cost ............... 7 / 7"]],
-          title: "Multiply first, divide second",
-          body: ["Do it in that order and the remainder survives long enough to matter",
-                 "Same operators, same numbers, one pair of parentheses fewer",
-                 "<code>upgradeCost</code> is the identical trap at 150%, and it is yours alone"],
+          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 4,
+                  lines: SELL_TEST },
+          lineNote: "<code>sellValue(3)</code> must be <code>2</code> &mdash; and <code>2</code> is only reachable if the multiply happened <em>before</em> the divide.",
+          term: [["", "multiply first:  3 * 7 = 21,  21 / 10 = 2"],
+                 ["err", "divide first:    7 / 10 = 0,   3 * 0 = 0"],
+                 ["dim", "# sellValue(1) is 0 either way -- which is why it is not enough"]],
+          title: "Small numbers are where the order shows",
+          body: ["Multiply first and the remainder survives long enough to matter",
+                 "<code>sellValue(90)</code> is 63: 90 &times; 7 is 630, and 630 / 10 is 63",
+                 "<code>upgradeCost</code> is the same trap at 150% &mdash; and it is yours alone"],
           action: { do: "Fix sellValue until sellValue(3) is 2, then write upgradeCost so upgradeCost(5) is 7.",
                     where: "src/core/rules.cpp &mdash; Pair 2" } })
     ]
@@ -626,55 +730,51 @@ var MODES = {
     label: "5 · The shop table",
     frames: [
       f({ todo: TODO_P4,
-          code: { fn: "src/game/main.cpp · mine", hl: 2, lines: [
-            '// the terminal gets the table; the window gets the board',
-            'std::cout << "\\n=== Holdfast -- Tower Shop ===\\n";',
-            'printShopTable();',
-            'std::cout << std::endl;',
-            '',
-            'InitWindow(COLS * TILE_SIZE, ROWS * TILE_SIZE + 120, "Holdfast");'
-          ] },
+          code: { fn: "src/game/main.cpp · mine", hl: -1, lines: SHOP_CALL },
           term: [["cmd", "$ ./build/holdfast"],
                  ["", "=== Holdfast -- Tower Shop ==="],
                  ["dim", "# nothing. The stub prints no lines at all."]],
-          title: "The shop earns a terminal",
-          body: ["<code>std::setw</code> has no meaning in a graphics window, so the price list prints",
-                 "Called once, before the window opens",
-                 "<code>printShopTable</code> returns <code>void</code> &mdash; it prints, it does not answer"] }),
+          title: "The shop prints before the window opens",
+          body: ["<code>std::setw</code> has no meaning in a graphics window",
+                 "So the board gets the window and the price list gets the terminal",
+                 "One line of this matters, and it is two down"] }),
 
       f({ todo: TODO_P4,
-          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 3, lines: [
-            '// every line the same width, or setw was not used',
-            'while (std::getline(lines, line)) {',
-            '    if (width == 0) { width = line.size(); }',
-            '    EXPECT_EQ(line.size(), width);',
-            '    EXPECT_NE(line.find("gold"), std::string::npos);',
-            '}'
-          ] },
+          code: { fn: "src/game/main.cpp · mine", hl: 2, lines: SHOP_CALL },
+          lineNote: "<code>printShopTable();</code> &mdash; called once, no arguments, no return value. Everything it does, it does by printing.",
+          term: [["cmd", "$ ./build/holdfast"],
+                 ["", "=== Holdfast -- Tower Shop ==="],
+                 ["dim", "# three lines belong here. The stub prints none."]],
+          title: "A void function is called for its effect",
+          body: ["Nothing catches a result, because there is no result",
+                 "The prices come from <code>towerCost</code>, so Pair 1 has to work first",
+                 "Get it wrong and you see it immediately, which is the point"] }),
+
+      f({ todo: TODO_P4,
+          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 2,
+                  lines: SHOP_TEST },
+          lineNote: "<code>EXPECT_EQ(line.size(), width)</code> &mdash; every line must be the <strong>same number of characters</strong> as the first one.",
           term: [["err", "Arrow 50 gold"],
                  ["err", "Cannon 90 gold"],
-                 ["err", "  line.size()  Which is: 14    width  Which is: 13"],
+                 ["err", "  line.size() 14    width 13"],
                  ["err", "[  FAILED  ] LiveShopTable.ColumnsLineUp"]],
           title: "The test measures the line, not the look",
-          body: ["Every printed line must be the <strong>same number of characters</strong>",
-                 "Three names of different lengths cannot manage that on their own",
-                 "Three rows, each naming its tower, each ending in <code>gold</code>"] }),
+          body: ["Three names of different lengths cannot do that on their own",
+                 "Pad the name to a fixed width and the number to a fixed width",
+                 "That is what <code>std::setw</code> is for, and why it is tested this way"] }),
 
       f({ todo: TODO_P4,
-          code: { fn: "tests/test_cpp_basics.cpp · the sibling's test", hl: 2, lines: [
-            '// the two tables have to line up with EACH OTHER',
-            '// the unit differs, so the whole line cannot be compared',
-            'EXPECT_EQ(x.find(" gold"), y.find(" dmg"))',
-            '    << "the number column ends in a different place";'
-          ] },
+          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 3,
+                  lines: SHOP_TEST },
+          lineNote: "<code>line.find(\"gold\")</code> &mdash; every row must also name its unit, so a tidy table of bare numbers still cannot pass.",
           term: [["ok", "Arrow                  50 gold"],
                  ["ok", "Cannon                 90 gold"],
                  ["ok", "Mortar                 70 gold"],
                  ["dim", "# 30 characters each. setw did that, not the space bar."]],
-          title: "And the sibling has to match it",
-          body: ["<code>std::setw</code> on the name <em>and</em> on the number &mdash; it is not sticky",
-                 "<code>std::left</code> and <code>std::right</code> <em>are</em> sticky, so name the one you want each time",
-                 "<code>printTowerTable</code> must use the <strong>same widths</strong> and end in <code>dmg</code>"],
+          title: "Same width, and it still has to say gold",
+          body: ["<code>std::setw</code> applies to the <em>next</em> item only &mdash; it is not sticky",
+                 "<code>std::left</code> and <code>std::right</code> <em>are</em> sticky, so name the one you want",
+                 "<code>printTowerTable</code> must use the same widths and end in <code>dmg</code>"],
           action: { do: "Print the shop table so every line is the same width, then the tower table with the same widths and dmg instead of gold.",
                     where: "src/core/rules.cpp &mdash; Pair 4" } })
     ]
@@ -736,70 +836,13 @@ var MODES = {
   }
 };
 
-// ---------------------------------------------------------------------------
-// Syntax colouring. Strings are lifted out first so a keyword inside one is
-// not painted, and the comment is split off after that, so a // inside a
-// string cannot swallow the rest of the line.
-// ---------------------------------------------------------------------------
-var KW = /\b(if|else|switch|case|default|break|return|for|while|do|const|static_cast|true|false)\b/g;
-var TY = /\b(int|double|char|bool|void|std|string)\b/g;
-var NUM = /\b(\d+\.?\d*)\b/g;
-
-function esc(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function paint(line) {
-  var s = esc(line);
-  if (/^\s*#/.test(line)) return '<span class="c-pre">' + s + "</span>";
-
-  // Placeholders are LETTERS, not digits: a numeric placeholder would be
-  // repainted by the number rule below and come back as nested spans.
-  var held = [];
-  s = s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, function (m) {
-    held.push(m);
-    return "\u0001" + String.fromCharCode(65 + held.length - 1) + "\u0002";
-  });
-
-  var com = "";
-  var at = s.indexOf("//");
-  if (at >= 0) { com = s.slice(at); s = s.slice(0, at); }
-
-  s = s.replace(KW, '<span class="c-kw">$1</span>')
-       .replace(TY, '<span class="c-typ">$1</span>')
-       .replace(NUM, '<span class="c-num">$1</span>');
-  if (com) s += '<span class="c-com">' + com + "</span>";
-
-  return s.replace(/\u0001([A-Z])\u0002/g, function (m, c) {
-    return '<span class="c-str">' + held[c.charCodeAt(0) - 65] + "</span>";
-  });
-}
-
-function renderCode(fr) {
-  var box = el("div", "codebox");
-  box.appendChild(el("div", "fn", fr.code.fn));
-  var body = el("div", "body");
-  fr.code.lines.forEach(function (line, i) {
-    var hit = i === fr.code.hl;
-    var ln = el("div", "ln" + (hit ? " hl" : ""));
-    if (hit) {
-      ln.appendChild(el("span", "src", paint(line)));
-      if (fr.code.calc) ln.appendChild(el("span", "calc", esc(fr.code.calc)));
-    } else {
-      ln.innerHTML = paint(line);
-    }
-    body.appendChild(ln);
-  });
-  box.appendChild(body);
-  return box;
-}
-
 /* The board, drawn from BOARDS data. 20 x 12 at 14px fits inside the .pipe's
-   own min-height, so this pane is the same height on every board step. */
+   own min-height, so this pane is the same height on every board step.
+   renderCode() and paint() come from the engine below. */
 function renderBoard(fr) {
   var pipe = el("div", "pipe");
   var win = el("div", "boardwin");
-  win.appendChild(el("div", "bar", "HOLDFAST — localhost:6080"));
+  win.appendChild(el("div", "bar", "HOLDFAST &mdash; localhost:6080"));
   var grid = el("div", "board");
   BOARDS[fr.board].forEach(function (row) {
     for (var c = 0; c < row.length; c++) {
@@ -812,7 +855,7 @@ function renderBoard(fr) {
   return pipe;
 }
 
-/* Rows of boxes: the orders of evaluation, and the four pairs. */
+/* Rows of boxes: the four pairs, on the submission tab. */
 function renderPanel(fr) {
   var pipe = el("div", "pipe");
   fr.panel.forEach(function (p) {
@@ -943,6 +986,83 @@ function renderTodo(fr, into) {
   tb.appendChild(el("span", "tag", "THIS STEP IS FOR"));
   tb.appendChild(el("span", "what", fr.todo));
   into.appendChild(tb);
+}
+
+/* ------------------------------------------------------------------- CODE
+ * One listing, and a highlight that walks DOWN it a line at a time.
+ *
+ * This is the shape of a Code-Together stepper and it is not optional -- see
+ * "A code step is one line" in templates/stepper/README.md. The listing is the
+ * thing that persists; the highlighted line and its yellow note are the things
+ * that move. Replacing the whole listing every step is how CT1 shipped the
+ * first time, and in the room it reads as flipping through screenshots: the
+ * class never gets to read any one of them.
+ *
+ *   fr.code = { fn | file, lines: [...], hl: index (-1 for none) }
+ *   fr.lineNote = the yellow THIS STEP box, about the highlighted line
+ *
+ * It lives here rather than in each stepper because it was written out three
+ * times and the third copy was the one that forgot the note.
+ */
+var KW = /\b(if|else|switch|case|default|break|return|for|while|do|const|static_cast|true|false)\b/g;
+var TY = /\b(int|double|char|bool|void|std|string)\b/g;
+var NUM = /\b(\d+\.?\d*)\b/g;
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* Catppuccin Mocha, the same palette as the CS 2420 steppers. Strings are
+ * lifted out first so a keyword inside one is not painted, and the comment is
+ * split off after that, so a // inside a string cannot swallow the line.
+ * Placeholders are LETTERS, not digits -- a numeric one would be repainted by
+ * the number rule and come back as nested spans. */
+function paint(line) {
+  var s = esc(line);
+  if (/^\s*#/.test(line)) return '<span class="c-pre">' + s + "</span>";
+
+  var held = [];
+  s = s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, function (m) {
+    held.push(m);
+    return "\u0001" + String.fromCharCode(65 + held.length - 1) + "\u0002";
+  });
+
+  var com = "";
+  var at = s.indexOf("//");
+  if (at >= 0) { com = s.slice(at); s = s.slice(0, at); }
+
+  s = s.replace(KW, '<span class="c-kw">$1</span>')
+       .replace(TY, '<span class="c-typ">$1</span>')
+       .replace(NUM, '<span class="c-num">$1</span>');
+  if (com) s += '<span class="c-com">' + com + "</span>";
+
+  return s.replace(/\u0001([A-Z])\u0002/g, function (m, c) {
+    return '<span class="c-str">' + held[c.charCodeAt(0) - 65] + "</span>";
+  });
+}
+
+function renderCode(fr) {
+  var code = fr.code;
+  var box = el("div", "codebox");
+  box.appendChild(el("div", "fn", code.fn || code.file || ""));
+  var body = el("div", "body");
+  code.lines.forEach(function (line, i) {
+    var hit = i === code.hl;
+    var ln = el("div", "ln" + (hit ? " hl" : ""));
+    if (hit) {
+      ln.appendChild(el("span", "src", paint(line)));
+      // The note sits ON the executing row on purpose: nothing to look back
+      // and forth between. A highlighted line without one is a step that
+      // points at code and does not say why -- verify_stepper.js fails it.
+      var note = fr.lineNote || code.note;
+      if (note) ln.appendChild(el("span", "calc", note));
+    } else {
+      ln.innerHTML = paint(line);
+    }
+    body.appendChild(ln);
+  });
+  box.appendChild(body);
+  return box;
 }
 
 /* The whole right-hand pane: terminal, then one card.
@@ -1148,13 +1268,16 @@ function boot() {
       if (fr.code) {
         ok(Array.isArray(fr.code.lines) && fr.code.lines.length > 0,
            where + ": code has lines");
-        ok(fr.code.hl >= 0 && fr.code.hl < fr.code.lines.length,
-           where + ": hl is inside the listing");
+        ok(fr.code.hl >= -1 && fr.code.hl < fr.code.lines.length,
+           where + ": hl is -1 or inside the listing");
         ok(!!fr.code.fn, where + ": code names its file");
-        // 1.35rem at line-height 1.6 is ~35px a line. Ten lines plus the
-        // header, the TODO bar and the page furniture is the 760px screen.
-        ok(fr.code.lines.length <= 10,
-           where + ": " + fr.code.lines.length + " code lines, 10 is the ceiling");
+        // RULE 6: a highlighted line must say what it does. hl -1 is the
+        // "read the whole listing" step a tab opens on, and is exempt.
+        ok(fr.code.hl < 0 || !!fr.lineNote,
+           where + ": highlights a line with no lineNote -- a step that points " +
+           "at code must say why");
+        ok(fr.code.lines.length <= 8,
+           where + ": " + fr.code.lines.length + " code lines, 8 is the ceiling");
       }
       if (fr.board) {
         ok(!!BOARDS[fr.board], where + ": board names a real picture");
@@ -1167,6 +1290,20 @@ function boot() {
       ok(!!last.action.do && !!last.action.where,
          m + ": hand-off needs an instruction and a location");
     }
+
+    // RULE 6 structurally: the listing persists, the highlight moves.
+    var adv = 0, swap = 0, prev = null;
+    fs.forEach(function (fr) {
+      if (!fr.code) { prev = null; return; }
+      if (prev) {
+        if (prev.lines !== fr.code.lines) swap++;
+        else if (fr.code.hl > prev.hl) adv++;
+      }
+      prev = { lines: fr.code.lines, hl: fr.code.hl };
+    });
+    ok(MODES[m].compare || swap <= adv,
+       m + ": the listing is replaced more often than the highlight moves (" +
+       swap + " swaps, " + adv + " advances) -- walk one listing a line at a time");
   });
 
   // Every board picture is 12 rows of 20, and the flat one is the only one
@@ -1185,7 +1322,8 @@ function boot() {
   // the effect of each line a student writes and never the line. These four
   // strings are the four answers; if one appears, the stepper has become an
   // answer key and must not be published.
-  var all = JSON.stringify(MODES);
+  var all = JSON.stringify(MODES) + JSON.stringify([DRAWBOARD, CONTRACT,
+    SELL_BAD, SELL_TEST, SHOP_CALL, SHOP_TEST]);
   [["cost * 7", "sellValue / upgradeCost"],
    ["(row + col) %", "isDarkTile"],
    ["row >= ROWS - 1", "isEdgeTile"],
@@ -1195,12 +1333,12 @@ function boot() {
        " -- a game stepper shows the effect, never the line");
   });
   // The planted bug is the one body that may appear, because it is the bug.
-  ok(all.indexOf("cost * (7 / 10)") >= 0,
+  ok(SELL_BAD.join("\n").indexOf("cost * (7 / 10)") >= 0,
      "tab 4: the 0-gold version must be shown, or the session has no bug to fix");
 
   // Tab 1 is flat THEN patterned. Reversed, the boundary lesson disappears.
-  ok(MODES.boundary.frames[1].board === "flat" &&
-     MODES.boundary.frames[2].board === "checker",
+  ok(MODES.boundary.frames[4].board === "flat" &&
+     MODES.boundary.frames[5].board === "checker",
      "tab 1: the flat board must come before the patterned one");
 
   var node = document.getElementById("selftest");

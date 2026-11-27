@@ -627,6 +627,83 @@ function renderTodo(fr, into) {
   into.appendChild(tb);
 }
 
+/* ------------------------------------------------------------------- CODE
+ * One listing, and a highlight that walks DOWN it a line at a time.
+ *
+ * This is the shape of a Code-Together stepper and it is not optional -- see
+ * "A code step is one line" in templates/stepper/README.md. The listing is the
+ * thing that persists; the highlighted line and its yellow note are the things
+ * that move. Replacing the whole listing every step is how CT1 shipped the
+ * first time, and in the room it reads as flipping through screenshots: the
+ * class never gets to read any one of them.
+ *
+ *   fr.code = { fn | file, lines: [...], hl: index (-1 for none) }
+ *   fr.lineNote = the yellow THIS STEP box, about the highlighted line
+ *
+ * It lives here rather than in each stepper because it was written out three
+ * times and the third copy was the one that forgot the note.
+ */
+var KW = /\b(if|else|switch|case|default|break|return|for|while|do|const|static_cast|true|false)\b/g;
+var TY = /\b(int|double|char|bool|void|std|string)\b/g;
+var NUM = /\b(\d+\.?\d*)\b/g;
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* Catppuccin Mocha, the same palette as the CS 2420 steppers. Strings are
+ * lifted out first so a keyword inside one is not painted, and the comment is
+ * split off after that, so a // inside a string cannot swallow the line.
+ * Placeholders are LETTERS, not digits -- a numeric one would be repainted by
+ * the number rule and come back as nested spans. */
+function paint(line) {
+  var s = esc(line);
+  if (/^\s*#/.test(line)) return '<span class="c-pre">' + s + "</span>";
+
+  var held = [];
+  s = s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, function (m) {
+    held.push(m);
+    return "\u0001" + String.fromCharCode(65 + held.length - 1) + "\u0002";
+  });
+
+  var com = "";
+  var at = s.indexOf("//");
+  if (at >= 0) { com = s.slice(at); s = s.slice(0, at); }
+
+  s = s.replace(KW, '<span class="c-kw">$1</span>')
+       .replace(TY, '<span class="c-typ">$1</span>')
+       .replace(NUM, '<span class="c-num">$1</span>');
+  if (com) s += '<span class="c-com">' + com + "</span>";
+
+  return s.replace(/\u0001([A-Z])\u0002/g, function (m, c) {
+    return '<span class="c-str">' + held[c.charCodeAt(0) - 65] + "</span>";
+  });
+}
+
+function renderCode(fr) {
+  var code = fr.code;
+  var box = el("div", "codebox");
+  box.appendChild(el("div", "fn", code.fn || code.file || ""));
+  var body = el("div", "body");
+  code.lines.forEach(function (line, i) {
+    var hit = i === code.hl;
+    var ln = el("div", "ln" + (hit ? " hl" : ""));
+    if (hit) {
+      ln.appendChild(el("span", "src", paint(line)));
+      // The note sits ON the executing row on purpose: nothing to look back
+      // and forth between. A highlighted line without one is a step that
+      // points at code and does not say why -- verify_stepper.js fails it.
+      var note = fr.lineNote || code.note;
+      if (note) ln.appendChild(el("span", "calc", note));
+    } else {
+      ln.innerHTML = paint(line);
+    }
+    body.appendChild(ln);
+  });
+  box.appendChild(body);
+  return box;
+}
+
 /* The whole right-hand pane: terminal, then one card.
  *
  * Identical in every stepper, which is why it lives here. The card is
