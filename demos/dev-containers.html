@@ -227,7 +227,7 @@ table.cmp th { background: #f2f4f7; }
 .boundary { border-top: 2px dashed #d7dae0; margin: .55rem 0 .5rem; }
 </style>
 </head>
-<body>
+<body data-module="0">
 <div class="wrap">
 
   <h1>Dev containers &mdash; where your code actually runs</h1>
@@ -683,6 +683,11 @@ function paint(line) {
 function renderCode(fr) {
   var code = fr.code;
   var box = el("div", "codebox");
+  // `given: true` marks a listing as instructor-owned scaffolding -- render.cpp,
+  // rules.h, a test file. The curriculum checks read this: given code is
+  // allowed to use C++ the module has not taught, exactly as it is in
+  // check_lookahead.py's GIVEN_SUBTREES, and student-facing code is not.
+  if (code.given) box.setAttribute("data-given", "true");
   box.appendChild(el("div", "fn", code.fn || code.file || ""));
   var body = el("div", "body");
   code.lines.forEach(function (line, i) {

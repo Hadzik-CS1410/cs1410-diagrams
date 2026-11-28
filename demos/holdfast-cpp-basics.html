@@ -244,7 +244,7 @@ table.cmp th { background: #f2f4f7; }
 .box.wide { min-width: 100%; }
 </style>
 </head>
-<body>
+<body data-module="1" data-session="cpp-basics">
 <div class="wrap">
 
   <h1>Holdfast &mdash; C++ Basics: the board appears</h1>
@@ -457,7 +457,7 @@ var MODES = {
     label: "1 · Who draws, who decides",
     frames: [
       f({ todo: TODO_P3,
-          code: { fn: "src/game/render.cpp · mine, not yours", hl: -1,
+          code: { fn: "src/game/render.cpp · mine, not yours", given: true, hl: -1,
                   lines: DRAWBOARD },
           term: [["cmd", "$ cmake --build build --target holdfast"],
                  ["cmd", "$ ./build/holdfast"],
@@ -468,7 +468,7 @@ var MODES = {
                  "Read it, then we take the three lines that matter"] }),
 
       f({ todo: TODO_P3,
-          code: { fn: "src/game/render.cpp · mine, not yours", hl: 1,
+          code: { fn: "src/game/render.cpp · mine, not yours", given: true, hl: 1,
                   lines: DRAWBOARD },
           lineNote: "The outer loop runs once per <strong>row</strong> &mdash; <code>ROWS</code> is 12, and it is a constant in <code>rules.h</code>.",
           term: [["", "row = 0, 1, 2, ... 11"],
@@ -479,7 +479,7 @@ var MODES = {
                  "Change that constant and the board changes size"] }),
 
       f({ todo: TODO_P3,
-          code: { fn: "src/game/render.cpp · mine, not yours", hl: 2,
+          code: { fn: "src/game/render.cpp · mine, not yours", given: true, hl: 2,
                   lines: DRAWBOARD },
           lineNote: "The inner loop runs once per <strong>column</strong>, for every row &mdash; so the pair runs 12 &times; 20 = <strong>240</strong> times.",
           term: [["", "(0,0) (0,1) (0,2) ... (0,19)"],
@@ -491,7 +491,7 @@ var MODES = {
                  "Every one of those 240 passes asks your code a question"] }),
 
       f({ todo: TODO_P3,
-          code: { fn: "src/game/render.cpp · mine, not yours", hl: 5,
+          code: { fn: "src/game/render.cpp · mine, not yours", given: true, hl: 5,
                   lines: DRAWBOARD },
           lineNote: "<code>isDarkTile(row, col)</code> &mdash; <strong>your</strong> function. The renderer asks, and paints whichever colour you answered.",
           term: [["", "isDarkTile(0, 0)  ->  false  ->  LIGHT"],
@@ -533,7 +533,7 @@ var MODES = {
     label: "2 · The contract",
     frames: [
       f({ todo: TODO_P1,
-          code: { fn: "include/rules.h · mine. Do not edit it.", hl: -1,
+          code: { fn: "include/rules.h · mine. Do not edit it.", given: true, hl: -1,
                   lines: CONTRACT },
           term: [["dim", "# LIVE   -- written together, in class"],
                  ["dim", "# FINISH -- the sibling, written alone"],
@@ -544,7 +544,7 @@ var MODES = {
                  "Read all eight, then we take one line from each pair"] }),
 
       f({ todo: TODO_P1,
-          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 0,
+          code: { fn: "include/rules.h · mine. Do not edit it.", given: true, hl: 0,
                   lines: CONTRACT },
           lineNote: "<code>towerCost</code> &mdash; a <code>switch</code> on the type returning <code>ARROW_COST</code>, <code>CANNON_COST</code> or <code>MORTAR_COST</code>, and <code>0</code> for anything else.",
           term: [["", "towerCost(1)   ->  ARROW_COST"],
@@ -556,7 +556,7 @@ var MODES = {
                  "<code>default:</code> is what returns 0 for a type that does not exist"] }),
 
       f({ todo: TODO_P1,
-          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 1,
+          code: { fn: "include/rules.h · mine. Do not edit it.", given: true, hl: 1,
                   lines: CONTRACT },
           lineNote: "<code>towerDamage</code> &mdash; the FINISH sibling. Same <code>switch</code>, same shape, a different table of constants.",
           term: [["", "towerDamage(1) ->  ARROW_DAMAGE"],
@@ -568,7 +568,7 @@ var MODES = {
                  "That is the design, not a coincidence"] }),
 
       f({ todo: TODO_P2,
-          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 2,
+          code: { fn: "include/rules.h · mine. Do not edit it.", given: true, hl: 2,
                   lines: CONTRACT },
           lineNote: "<code>sellValue</code> &mdash; 70% of the cost, rounded down. This one has a trap in it, and tab 4 is entirely about it.",
           term: [["", "sellValue(90)  ->  63     what it should be"],
@@ -579,7 +579,7 @@ var MODES = {
                  "Come back to this line after tab 4 and it will read differently"] }),
 
       f({ todo: TODO_P3,
-          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 4,
+          code: { fn: "include/rules.h · mine. Do not edit it.", given: true, hl: 4,
                   lines: CONTRACT },
           lineNote: "<code>isDarkTile</code> &mdash; two <code>int</code>s in, one <code>bool</code> out. The renderer calls it 240 times a frame.",
           term: [["", "isDarkTile(row, col)  ->  true or false"],
@@ -590,7 +590,7 @@ var MODES = {
                  "Tab 3 shows what each of them looks like on screen"] }),
 
       f({ todo: TODO_P4,
-          code: { fn: "include/rules.h · mine. Do not edit it.", hl: 6,
+          code: { fn: "include/rules.h · mine. Do not edit it.", given: true, hl: 6,
                   lines: CONTRACT },
           lineNote: "<code>void</code> &mdash; returns nothing. <code>printShopTable</code> prints; it does not answer, so there is nothing to catch.",
           term: [["cmd", "$ cmake --build build"],
@@ -698,7 +698,7 @@ var MODES = {
                  "Nothing is a typo. The arithmetic is just in the wrong order"] }),
 
       f({ todo: TODO_P2,
-          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 2,
+          code: { fn: "tests/test_cpp_basics.cpp · mine", given: true, hl: 2,
                   lines: SELL_TEST },
           lineNote: "<code>sellValue(ARROW_COST)</code> must be <code>35</code> &mdash; the test uses the constant, not <code>50</code>, so changing a price cannot break it.",
           term: [["err", "Expected equality of these values:"],
@@ -710,7 +710,7 @@ var MODES = {
                  "There is a second test two lines down, and it is the sharper one"] }),
 
       f({ todo: TODO_P2,
-          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 4,
+          code: { fn: "tests/test_cpp_basics.cpp · mine", given: true, hl: 4,
                   lines: SELL_TEST },
           lineNote: "<code>sellValue(3)</code> must be <code>2</code> &mdash; and <code>2</code> is only reachable if the multiply happened <em>before</em> the divide.",
           term: [["", "multiply first:  3 * 7 = 21,  21 / 10 = 2"],
@@ -730,7 +730,7 @@ var MODES = {
     label: "5 · The shop table",
     frames: [
       f({ todo: TODO_P4,
-          code: { fn: "src/game/main.cpp · mine", hl: -1, lines: SHOP_CALL },
+          code: { fn: "src/game/main.cpp · mine", given: true, hl: -1, lines: SHOP_CALL },
           term: [["cmd", "$ ./build/holdfast"],
                  ["", "=== Holdfast -- Tower Shop ==="],
                  ["dim", "# nothing. The stub prints no lines at all."]],
@@ -740,7 +740,7 @@ var MODES = {
                  "One line of this matters, and it is two down"] }),
 
       f({ todo: TODO_P4,
-          code: { fn: "src/game/main.cpp · mine", hl: 2, lines: SHOP_CALL },
+          code: { fn: "src/game/main.cpp · mine", given: true, hl: 2, lines: SHOP_CALL },
           lineNote: "<code>printShopTable();</code> &mdash; called once, no arguments, no return value. Everything it does, it does by printing.",
           term: [["cmd", "$ ./build/holdfast"],
                  ["", "=== Holdfast -- Tower Shop ==="],
@@ -751,7 +751,7 @@ var MODES = {
                  "Get it wrong and you see it immediately, which is the point"] }),
 
       f({ todo: TODO_P4,
-          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 2,
+          code: { fn: "tests/test_cpp_basics.cpp · mine", given: true, hl: 2,
                   lines: SHOP_TEST },
           lineNote: "<code>EXPECT_EQ(line.size(), width)</code> &mdash; every line must be the <strong>same number of characters</strong> as the first one.",
           term: [["err", "Arrow 50 gold"],
@@ -764,7 +764,7 @@ var MODES = {
                  "That is what <code>std::setw</code> is for, and why it is tested this way"] }),
 
       f({ todo: TODO_P4,
-          code: { fn: "tests/test_cpp_basics.cpp · mine", hl: 3,
+          code: { fn: "tests/test_cpp_basics.cpp · mine", given: true, hl: 3,
                   lines: SHOP_TEST },
           lineNote: "<code>line.find(\"gold\")</code> &mdash; every row must also name its unit, so a tidy table of bare numbers still cannot pass.",
           term: [["ok", "Arrow                  50 gold"],
@@ -1044,6 +1044,11 @@ function paint(line) {
 function renderCode(fr) {
   var code = fr.code;
   var box = el("div", "codebox");
+  // `given: true` marks a listing as instructor-owned scaffolding -- render.cpp,
+  // rules.h, a test file. The curriculum checks read this: given code is
+  // allowed to use C++ the module has not taught, exactly as it is in
+  // check_lookahead.py's GIVEN_SUBTREES, and student-facing code is not.
+  if (code.given) box.setAttribute("data-given", "true");
   box.appendChild(el("div", "fn", code.fn || code.file || ""));
   var body = el("div", "body");
   code.lines.forEach(function (line, i) {
